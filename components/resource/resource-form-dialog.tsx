@@ -26,6 +26,7 @@ type Props = {
   fields: Field[]
   relationOptions: Partial<Record<RelationKey, Option[]>>
   record?: Record<string, unknown>
+  inventoryType?: 'part' | 'filter' | 'oil'
 }
 
 const initialState: ActionState = { ok: false }
@@ -38,7 +39,7 @@ function initialValue(field: Field, record?: Record<string, unknown>) {
   return field.defaultValue ?? ''
 }
 
-export function ResourceFormDialog({ resourceKey, singular, fields, relationOptions, record }: Props) {
+export function ResourceFormDialog({ resourceKey, singular, fields, relationOptions, record, inventoryType }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
   const [selectedInventoryType, setSelectedInventoryType] = useState(String(record?.inventory_type ?? 'part'))
@@ -76,9 +77,10 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
           </DialogHeader>
           {open && (
             <form action={formAction} className="flex flex-col gap-5">
+              {resourceKey === 'parts' && inventoryType && <input type="hidden" name="inventory_type" value={inventoryType} />}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {fields.map((field) => (
-                  <FieldInput
+                  {!(resourceKey === 'parts' && inventoryType && field.name === 'inventory_type') && <FieldInput
                     key={`${field.name}-${resourceKey === 'parts' && field.name === 'category' ? selectedInventoryType : ''}`}
                     field={field}
                     value={initialValue(field, record)}
@@ -104,7 +106,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                           ? setSelectedInventoryType
                           : undefined
                     }
-                  />
+                  />}
                 ))}
               </div>
               {state.error && !state.ok && (
