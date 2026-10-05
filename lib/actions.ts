@@ -146,8 +146,19 @@ export async function deleteRecord(resourceKey: string, id: string): Promise<Act
   if (!resource || !UUID_RE.test(id)) return { ok: false, error: 'طلب غير صالح' }
 
   const supabase = await requireUser()
-  const { error } = await supabase.from(resource.table).delete().eq('id', id)
-  if (error) return { ok: false, error: friendlyDbError(error.code) }
+  if (resource.key === 'parts') {
+    const { data: deleted, error } = await supabase
+      .from('parts')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle()
+    if (error) return { ok: false, error: error.message || friendlyDbError(error.code) }
+    if (!deleted) return { ok: false, error: 'لم يتم حذف قطعة الغيار. تأكد من صلاحية المستخدم والفرع.' }
+  } else {
+    const { error } = await supabase.from(resource.table).delete().eq('id', id)
+    if (error) return { ok: false, error: friendlyDbError(error.code) }
+  }
 
   revalidatePath(resource.path)
   revalidatePath('/')
