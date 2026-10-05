@@ -41,6 +41,7 @@ function initialValue(field: Field, record?: Record<string, unknown>) {
 export function ResourceFormDialog({ resourceKey, singular, fields, relationOptions, record }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
+  const [selectedInventoryType, setSelectedInventoryType] = useState(String(record?.inventory_type ?? 'part'))
   const catalog = relationOptions.vehicle_catalog ?? []
   const makes = useMemo(() => Array.from(new Set(catalog.map((o) => o.value.split('|||')[0]))).filter(Boolean), [catalog])
   const models = useMemo(() => catalog.filter((o) => o.value.startsWith(`${selectedMake}|||`)).map((o) => o.value.split('|||')[1]), [catalog, selectedMake])
@@ -78,7 +79,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {fields.map((field) => (
                   <FieldInput
-                    key={field.name}
+                    key={`${field.name}-${resourceKey === 'parts' && field.name === 'category' ? selectedInventoryType : ''}`}
                     field={field}
                     value={initialValue(field, record)}
                     options={field.relation ? relationOptions[field.relation] ?? [] : field.options ?? []}
@@ -87,9 +88,22 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                         ? makes.map((make) => ({ value: make, label: make }))
                         : resourceKey === 'cars' && field.name === 'model'
                           ? models.map((model) => ({ value: model, label: model }))
+                          : resourceKey === 'parts' && field.name === 'category'
+                            ? (selectedInventoryType === 'part'
+                                ? ['ميكانيكا', 'كهرباء', 'عفشة', 'كماليات', 'اصناف اخرى']
+                                : selectedInventoryType === 'filter'
+                                  ? ['فلاتر هواء', 'فلاتر زيت', 'اصناف اخرى']
+                                  : ['زيت موتور', 'زيت فتيس', 'اصناف اخرى', 'فلاتر زيت']
+                              ).map((x) => ({ value: x, label: x }))
+                            : undefined
+                    }
+                    onSpecialChange={
+                      resourceKey === 'cars' && field.name === 'make'
+                        ? setSelectedMake
+                        : resourceKey === 'parts' && field.name === 'inventory_type'
+                          ? setSelectedInventoryType
                           : undefined
                     }
-                    onSpecialChange={resourceKey === 'cars' && field.name === 'make' ? setSelectedMake : undefined}
                   />
                 ))}
               </div>
