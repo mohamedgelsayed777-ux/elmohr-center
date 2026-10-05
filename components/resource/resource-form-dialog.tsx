@@ -79,8 +79,8 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
             <form action={formAction} className="flex flex-col gap-5">
               {resourceKey === 'parts' && inventoryType && <input type="hidden" name="inventory_type" value={inventoryType} />}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {fields.map((field) => (
-                  {!(resourceKey === 'parts' && inventoryType && field.name === 'inventory_type') && <FieldInput
+                {fields.filter((field) => !(resourceKey === 'parts' && inventoryType && field.name === 'inventory_type')).map((field) => (
+                  <FieldInput
                     key={`${field.name}-${resourceKey === 'parts' && field.name === 'category' ? selectedInventoryType : ''}`}
                     field={field}
                     value={initialValue(field, record)}
@@ -106,7 +106,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                           ? setSelectedInventoryType
                           : undefined
                     }
-                  />}
+                  />
                 ))}
               </div>
               {state.error && !state.ok && (
