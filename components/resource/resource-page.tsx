@@ -29,9 +29,11 @@ function sanitizeSearch(q: string) {
 export async function ResourcePage({
   resourceKey,
   searchParams,
+  headerActions,
 }: {
   resourceKey: ResourceKey
   searchParams: SearchParams
+  headerActions?: React.ReactNode
 }) {
   const resource = RESOURCES[resourceKey]
   const supabase = await createClient()
@@ -90,12 +92,12 @@ export async function ResourcePage({
         title={resource.title}
         description={resource.description}
         actions={
-          <ResourceFormDialog
+          {headerActions ?? <ResourceFormDialog
             resourceKey={resource.key}
             singular={resource.singular}
             fields={resource.fields}
             relationOptions={relationOptions}
-          />
+          />}
         }
       />
 
