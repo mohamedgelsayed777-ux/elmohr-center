@@ -15,7 +15,7 @@ import { saveWorkOrderIntake, type ActionState } from '@/lib/actions'
 type Option={value:string;label:string}
 type Customer={value:string;label:string;phone:string;branch_id:string|null}
 type Car={id:string;customer_id:string;make:string;model:string;year:number|null;plate_number:string;vin:string;color:string;mileage:number|null}
-type Stock={id:string;name:string;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil'}
+type Stock={id:string;name:string;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil';branch_id:string|null}
 type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[];stock:Stock[]}
 
 const initialState:ActionState={ok:false}
@@ -25,21 +25,23 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
  const [state,formAction,pending]=useActionState(saveWorkOrderIntake,initialState)
  const [customerId,setCustomerId]=useState('')
  const [carId,setCarId]=useState('')
+ const [branchId,setBranchId]=useState(branches[0]?.value || '')
  const [items,setItems]=useState<{part_id:string;quantity:number}[]>([])
  const selectedCustomer=customers.find(c=>c.value===customerId)
  const customerCars=useMemo(()=>cars.filter(c=>c.customer_id===customerId),[cars,customerId])
  const selectedCar=customerCars.find(c=>c.id===carId)
- const parts=stock.filter(s=>s.inventory_type==='part')
- const filters=stock.filter(s=>s.inventory_type==='filter')
- const oils=stock.filter(s=>s.inventory_type==='oil')
- const partsTotal=useMemo(()=>items.reduce((sum,item)=>sum+(Number(stock.find(s=>s.id===item.part_id)?.sale_price??0)*item.quantity),0),[items,stock])
+ const branchStock=useMemo(()=>stock.filter(s=>!s.branch_id || s.branch_id===branchId),[stock,branchId])
+ const parts=branchStock.filter(s=>s.inventory_type==='part')
+ const filters=branchStock.filter(s=>s.inventory_type==='filter')
+ const oils=branchStock.filter(s=>s.inventory_type==='oil')
+ const partsTotal=useMemo(()=>items.reduce((sum,item)=>sum+(Number(branchStock.find(s=>s.id===item.part_id)?.sale_price??0)*item.quantity),0),[items,branchStock])
  const [laborAmount,setLaborAmount]=useState(0)
  const [amountPaid,setAmountPaid]=useState(0)
  const totalAmount=useMemo(()=>Math.round((partsTotal+laborAmount)*100)/100,[partsTotal,laborAmount])
  const remainingAmount=Math.max(0,Math.round((totalAmount-amountPaid)*100)/100)
  const addItem=(id:string)=>{if(!id)return;setItems(x=>x.some(i=>i.part_id===id)?x:x.concat({part_id:id,quantity:1}))}
  const updateQty=(id:string,q:number)=>setItems(x=>q<=0?x.filter(i=>i.part_id!==id):x.map(i=>i.part_id===id?{...i,quantity:q}:i))
- useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setCustomerId('');setCarId('');toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
+ useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
  return <>
   <Button onClick={()=>setOpen(true)} className="h-10"><Plus className="size-4"/>إضافة أمر عمل</Button>
   <Dialog open={open} onOpenChange={setOpen}>
@@ -50,7 +52,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
        <div>
         <Label htmlFor="customer_id">اسم العميل *</Label>
-        <NativeSelect id="customer_id" name="customer_id" required value={customerId} onChange={e=>{setCustomerId(e.target.value);setCarId('')}}>
+        <NativeSelect id="customer_id" name="customer_id" required value={customerId} onChange={e=>{const id=e.target.value;const c=customers.find(x=>x.value===id);setCustomerId(id);setCarId('');setBranchId(c?.branch_id || branches[0]?.value || '');setItems([])}}>
           <option value="">اختر العميل</option>
           {customers.map(o=><option key={o.value} value={o.value}>{o.label}{o.phone ? ` — ${o.phone}` : ''}</option>)}
         </NativeSelect>
@@ -58,7 +60,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
        </div>
        <div>
         <Label htmlFor="branch_id">الفرع *</Label>
-        <NativeSelect id="branch_id" name="branch_id" required defaultValue={selectedCustomer?.branch_id || branches[0]?.value || ''}>
+        <NativeSelect id="branch_id" name="branch_id" required value={branchId} onChange={e=>{setBranchId(e.target.value);setItems([])}}>
           <option value="">اختر الفرع</option>
           {branches.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
         </NativeSelect>
@@ -88,7 +90,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
        <div><Label>الحالة *</Label><NativeSelect name="status" defaultValue="pending"><option value="pending">قيد الانتظار</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="ready">جاهزة للتسليم</option><option value="delivered">تم التسليم</option><option value="cancelled">ملغي</option></NativeSelect></div>
        <div><Label>الأولوية</Label><NativeSelect name="priority" defaultValue="normal"><option value="low">منخفضة</option><option value="normal">عادية</option><option value="high">عالية</option><option value="urgent">عاجلة</option></NativeSelect></div>
       </div>
-      <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">أسعار القطع والفلاتر والزيوت تُسحب تلقائياً من سعر البيع في المخزن، والإجمالي النهائي = الأصناف + المصنعيات.</p>
+      <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">يتم عرض مخزون الفرع المختار فقط، والأسعار تُسحب تلقائياً من سعر البيع في المخزن.</p>
       <div><Label>الأعطال</Label><Textarea name="faults" rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
       <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty}/>
       <StockSection title="الفلاتر" items={items} stock={filters} onAdd={addItem} onQty={updateQty}/>
