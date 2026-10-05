@@ -46,6 +46,8 @@ function parseField(field: Field, formData: FormData): { value: unknown; error?:
         : { value: null, error: 'البريد الإلكتروني غير صحيح' }
     case 'date':
       return DATE_RE.test(raw) ? { value: raw } : { value: null, error: `تاريخ "${field.label}" غير صحيح` }
+    case 'time':
+      return /^\\d{2}:\\d{2}$/.test(raw) ? { value: raw } : { value: null, error: `وقت "${field.label}" غير صحيح` }
     case 'relation':
       return UUID_RE.test(raw) ? { value: raw } : { value: null, error: `اختيار "${field.label}" غير صحيح` }
     case 'select':
