@@ -205,6 +205,26 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     return { ok: false, error: 'بيانات قطع الغيار غير صحيحة' }
   }
 
+  if (items.length) {
+    const { data: availableParts, error: partsError } = await supabase
+      .from('parts')
+      .select('id,name,quantity,branch_id')
+      .in('id', items.map((item) => item.part_id))
+
+    if (partsError) return { ok: false, error: 'تعذر التحقق من مخزون قطع الغيار' }
+
+    for (const item of items) {
+      const part = availableParts?.find((p) => p.id === item.part_id)
+      if (!part) return { ok: false, error: 'إحدى قطع الغيار غير موجودة في المخزن' }
+      if (part.branch_id && part.branch_id !== branchId) {
+        return { ok: false, error: `قطعة الغيار "${part.name}" موجودة في فرع مختلف عن فرع أمر العمل` }
+      }
+      if (Number(part.quantity) < item.quantity) {
+        return { ok: false, error: `الكمية المتاحة من "${part.name}" هي ${part.quantity} فقط` }
+      }
+    }
+  }
+
   const { data, error } = await supabase.rpc('create_existing_car_work_order_intake', {
     p_branch_id: branchId,
     p_customer_id: customerId,
