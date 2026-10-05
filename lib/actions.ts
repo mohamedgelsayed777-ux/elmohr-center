@@ -166,10 +166,8 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   const supabase = await requireUser()
 
   const branchId = String(formData.get('branch_id') ?? '').trim()
-  const customerName = String(formData.get('customer_name') ?? '').trim()
-  const make = String(formData.get('make') ?? '').trim()
-  const model = String(formData.get('model') ?? '').trim()
-  const vin = String(formData.get('vin') ?? '').trim()
+  const customerId = String(formData.get('customer_id') ?? '').trim()
+  const carId = String(formData.get('car_id') ?? '').trim()
   const employeeId = String(formData.get('employee_id') ?? '').trim()
   const status = String(formData.get('status') ?? 'pending')
   const priority = String(formData.get('priority') ?? 'normal')
@@ -181,9 +179,20 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   const itemsRaw = String(formData.get('items_json') ?? '[]')
 
   if (!UUID_RE.test(branchId)) return { ok: false, error: 'الفرع غير صحيح' }
-  if (!customerName) return { ok: false, error: 'اسم العميل مطلوب' }
-  if (!make || !model) return { ok: false, error: 'اختر الشركة والموديل' }
-  if (!Number.isFinite(laborAmount) || laborAmount < 0 || !Number.isFinite(amountPaid) || amountPaid < 0) return { ok: false, error: 'المبالغ المدخلة غير صحيحة' }
+  if (!UUID_RE.test(customerId)) return { ok: false, error: 'العميل المختار غير صحيح' }
+  if (!UUID_RE.test(carId)) return { ok: false, error: 'السيارة المختارة غير صحيحة' }
+  if (!Number.isFinite(laborAmount) || laborAmount < 0 || !Number.isFinite(amountPaid) || amountPaid < 0) {
+    return { ok: false, error: 'المبالغ المدخلة غير صحيحة' }
+  }
+
+  const [{ data: customer }, { data: car }] = await Promise.all([
+    supabase.from('customers').select('id,branch_id').eq('id', customerId).maybeSingle(),
+    supabase.from('cars').select('id,customer_id').eq('id', carId).maybeSingle(),
+  ])
+
+  if (!customer) return { ok: false, error: 'العميل غير موجود أو لا يمكنك الوصول إليه' }
+  if (!car || car.customer_id !== customerId) return { ok: false, error: 'السيارة المختارة غير مسجلة باسم هذا العميل' }
+  if (customer.branch_id && customer.branch_id !== branchId) return { ok: false, error: 'العميل تابع لفرع مختلف عن الفرع المختار' }
 
   let items: Array<{ part_id: string; quantity: number }> = []
   try {
@@ -196,12 +205,10 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     return { ok: false, error: 'بيانات قطع الغيار غير صحيحة' }
   }
 
-  const { data, error } = await supabase.rpc('create_work_order_intake', {
+  const { data, error } = await supabase.rpc('create_existing_car_work_order_intake', {
     p_branch_id: branchId,
-    p_customer_name: customerName,
-    p_make: make,
-    p_model: model,
-    p_vin: vin || null,
+    p_customer_id: customerId,
+    p_car_id: carId,
     p_employee_id: UUID_RE.test(employeeId) ? employeeId : null,
     p_status: status,
     p_priority: priority,
@@ -213,25 +220,93 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   })
 
   if (error) {
+    if (error.message.includes('CUSTOMER_NOT_FOUND')) return { ok: false, error: 'العميل غير موجود' }
+    if (error.message.includes('CAR_NOT_BELONG_TO_CUSTOMER')) return { ok: false, error: 'السيارة المختارة غير مسجلة باسم هذا العميل' }
     if (error.message.includes('INSUFFICIENT_STOCK')) return { ok: false, error: 'الكمية المطلوبة غير متوفرة في المخزن' }
     if (error.message.includes('PART_NOT_FOUND')) return { ok: false, error: 'إحدى قطع الغيار غير موجودة في المخزن' }
     if (error.message.includes('INVALID_PAYMENT')) return { ok: false, error: 'طريقة الدفع غير صحيحة' }
+    if (error.message.includes('INVALID_STATUS')) return { ok: false, error: 'حالة أمر العمل غير صحيحة' }
+    if (error.message.includes('INVALID_PRIORITY')) return { ok: false, error: 'أولوية أمر العمل غير صحيحة' }
     return { ok: false, error: friendlyDbError(error.code) }
   }
 
-  const { data: createdOrder } = await supabase.from('work_orders').select('id,customer_id,branch_id').eq('id', String(data)).maybeSingle()
-  const { data: pricedParts } = items.length ? await supabase.from('parts').select('id,name,sale_price,inventory_type').in('id',items.map(i=>i.part_id)) : { data: [] as any[] }
-  const partsTotal = items.reduce((sum,item)=>sum + Number(pricedParts?.find(p=>p.id===item.part_id)?.sale_price ?? 0) * item.quantity,0)
+  const { data: createdOrder } = await supabase
+    .from('work_orders')
+    .select('id,customer_id,branch_id')
+    .eq('id', String(data))
+    .maybeSingle()
+
+  const { data: pricedParts } = items.length
+    ? await supabase.from('parts').select('id,name,sale_price,inventory_type').in('id', items.map((i) => i.part_id))
+    : { data: [] as any[] }
+
+  const partsTotal = items.reduce(
+    (sum, item) => sum + Number(pricedParts?.find((p) => p.id === item.part_id)?.sale_price ?? 0) * item.quantity,
+    0,
+  )
   const totalAmount = Math.round((partsTotal + laborAmount) * 100) / 100
-  if (amountPaid > totalAmount) return { ok:false, error:'المبلغ المدفوع أكبر من إجمالي الفاتورة' }
+  if (amountPaid > totalAmount) return { ok: false, error: 'المبلغ المدفوع أكبر من إجمالي الفاتورة' }
+
   if (createdOrder) {
-    await supabase.from('work_orders').update({total_amount:totalAmount,labor_amount:laborAmount,amount_paid:amountPaid}).eq('id',createdOrder.id)
-    const { data: invoice } = await supabase.from('invoices').insert({work_order_id:createdOrder.id,customer_id:createdOrder.customer_id,branch_id:createdOrder.branch_id,subtotal:totalAmount,discount:0,tax:0,total:totalAmount,paid_amount:amountPaid,status:amountPaid<=0?'unpaid':amountPaid>=totalAmount?'paid':'partial',payment_method:paymentMethod==='visa'?'card':paymentMethod==='instapay'?'transfer':paymentMethod==='wallet'?'other':paymentMethod}).select('id').single()
+    await supabase
+      .from('work_orders')
+      .update({ total_amount: totalAmount, labor_amount: laborAmount, amount_paid: amountPaid })
+      .eq('id', createdOrder.id)
+
+    const { data: invoice } = await supabase
+      .from('invoices')
+      .insert({
+        work_order_id: createdOrder.id,
+        customer_id: createdOrder.customer_id,
+        branch_id: createdOrder.branch_id,
+        subtotal: totalAmount,
+        discount: 0,
+        tax: 0,
+        total: totalAmount,
+        paid_amount: amountPaid,
+        status: amountPaid <= 0 ? 'unpaid' : amountPaid >= totalAmount ? 'paid' : 'partial',
+        payment_method:
+          paymentMethod === 'visa'
+            ? 'card'
+            : paymentMethod === 'instapay'
+              ? 'transfer'
+              : paymentMethod === 'wallet'
+                ? 'other'
+                : paymentMethod,
+      })
+      .select('id')
+      .single()
+
     if (invoice) {
-      if (pricedParts?.length) await supabase.from('invoice_items').insert(items.map(item=>{const p=pricedParts.find(x=>x.id===item.part_id);return {invoice_id:invoice.id,item_type:p?.inventory_type ?? 'part',part_id:item.part_id,description:p?.name ?? 'صنف',quantity:item.quantity,unit_price:Number(p?.sale_price??0),total:Math.round(Number(p?.sale_price??0)*item.quantity*100)/100}}))
-      if (laborAmount>0) await supabase.from('invoice_items').insert({invoice_id:invoice.id,item_type:'labor',description:'مصنعيات',quantity:1,unit_price:laborAmount,total:laborAmount})
+      if (pricedParts?.length) {
+        await supabase.from('invoice_items').insert(
+          items.map((item) => {
+            const p = pricedParts.find((x) => x.id === item.part_id)
+            return {
+              invoice_id: invoice.id,
+              item_type: p?.inventory_type ?? 'part',
+              part_id: item.part_id,
+              description: p?.name ?? 'صنف',
+              quantity: item.quantity,
+              unit_price: Number(p?.sale_price ?? 0),
+              total: Math.round(Number(p?.sale_price ?? 0) * item.quantity * 100) / 100,
+            }
+          }),
+        )
+      }
+      if (laborAmount > 0) {
+        await supabase.from('invoice_items').insert({
+          invoice_id: invoice.id,
+          item_type: 'labor',
+          description: 'مصنعيات',
+          quantity: 1,
+          unit_price: laborAmount,
+          total: laborAmount,
+        })
+      }
     }
   }
+
   revalidatePath('/work-orders')
   revalidatePath('/customers')
   revalidatePath('/cars')
