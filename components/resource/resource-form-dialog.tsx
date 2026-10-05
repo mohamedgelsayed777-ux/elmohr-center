@@ -42,7 +42,7 @@ function initialValue(field: Field, record?: Record<string, unknown>) {
 export function ResourceFormDialog({ resourceKey, singular, fields, relationOptions, record, inventoryType }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
-  const [selectedInventoryType, setSelectedInventoryType] = useState(String(record?.inventory_type ?? 'part'))
+  const [selectedInventoryType, setSelectedInventoryType] = useState(String(inventoryType ?? record?.inventory_type ?? 'part'))
   const catalog = relationOptions.vehicle_catalog ?? []
   const makes = useMemo(() => Array.from(new Set(catalog.map((o) => o.value.split('|||')[0]))).filter(Boolean), [catalog])
   const models = useMemo(() => catalog.filter((o) => o.value.startsWith(`${selectedMake}|||`)).map((o) => o.value.split('|||')[1]), [catalog, selectedMake])
@@ -95,7 +95,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                                 ? ['ميكانيكا', 'كهرباء', 'عفشة', 'كماليات', 'اصناف اخرى']
                                 : selectedInventoryType === 'filter'
                                   ? ['فلاتر هواء', 'فلاتر زيت', 'اصناف اخرى']
-                                  : ['زيت موتور', 'زيت فتيس', 'اصناف اخرى', 'فلاتر زيت']
+                                  : ['زيت موتور', 'زيت فتيس', 'اصناف اخرى']
                               ).map((x) => ({ value: x, label: x }))
                             : undefined
                     }
