@@ -154,7 +154,7 @@ export async function deleteRecord(resourceKey: string, id: string): Promise<Act
   return { ok: true, at: Date.now() }
 }
 
-export async function claimFirstManager() { const supabase=await requireUser(); await supabase.rpc('claim_first_manager'); revalidatePath('/'); }
+export async function claimFirstManager() { const supabase=await requireUser(); await supabase.rpc('claim_first_manager'); }
 
 export async function signOut() {
   const supabase = await createClient()
