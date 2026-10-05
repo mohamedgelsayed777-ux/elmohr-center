@@ -32,6 +32,11 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
  const parts=stock.filter(s=>s.inventory_type==='part')
  const filters=stock.filter(s=>s.inventory_type==='filter')
  const oils=stock.filter(s=>s.inventory_type==='oil')
+ const partsTotal=useMemo(()=>items.reduce((sum,item)=>sum+(Number(stock.find(s=>s.id===item.part_id)?.sale_price??0)*item.quantity),0),[items,stock])
+ const [laborAmount,setLaborAmount]=useState(0)
+ const [amountPaid,setAmountPaid]=useState(0)
+ const totalAmount=useMemo(()=>Math.round((partsTotal+laborAmount)*100)/100,[partsTotal,laborAmount])
+ const remainingAmount=Math.max(0,Math.round((totalAmount-amountPaid)*100)/100)
  const addItem=(id:string)=>{if(!id)return;setItems(x=>x.some(i=>i.part_id===id)?x:x.concat({part_id:id,quantity:1}))}
  const updateQty=(id:string,q:number)=>setItems(x=>q<=0?x.filter(i=>i.part_id!==id):x.map(i=>i.part_id===id?{...i,quantity:q}:i))
  useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setCustomerId('');setCarId('');toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
@@ -90,9 +95,16 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
       <StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty}/>
       <div><Label>الإصلاحات التي تم تنفيذها</Label><Textarea name="repairs_done" rows={3} className="mt-1.5" placeholder="اكتب الإصلاحات والأعمال التي تم تنفيذها"/></div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-       <div><Label>المصنعيات</Label><Input name="labor_amount" type="number" min="0" step="0.01" defaultValue="0" className="mt-1.5"/></div>
-       <div><Label>المدفوع</Label><Input name="amount_paid" type="number" min="0" step="0.01" defaultValue="0" className="mt-1.5"/></div>
+       <div><Label>المصنعيات</Label><Input name="labor_amount" type="number" min="0" step="0.01" value={laborAmount} onChange={e=>setLaborAmount(Math.max(0,Number(e.target.value)||0))} className="mt-1.5"/></div>
+       <div><Label>المدفوع</Label><Input name="amount_paid" type="number" min="0" step="0.01" value={amountPaid} onChange={e=>setAmountPaid(Math.max(0,Number(e.target.value)||0))} className="mt-1.5"/></div>
        <div><Label>طريقة الدفع</Label><NativeSelect name="payment_method"><option value="">اختر</option><option value="cash">نقدي</option><option value="instapay">إنستاباي</option><option value="wallet">محفظة</option><option value="visa">فيزا</option></NativeSelect></div>
+      </div>
+      <div className="rounded-xl border-2 bg-muted/30 p-4">
+       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div><p className="text-sm text-muted-foreground">إجمالي قطع الغيار والأصناف</p><p className="mt-1 text-xl font-bold">{partsTotal.toFixed(2)} ج.م</p></div>
+        <div><p className="text-sm text-muted-foreground">المصنعيات</p><p className="mt-1 text-xl font-bold">{laborAmount.toFixed(2)} ج.م</p></div>
+        <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">الإجمالي المستحق</p><p className="mt-1 text-2xl font-bold">{totalAmount.toFixed(2)} ج.م</p><p className="mt-1 text-sm text-muted-foreground">المتبقي: {remainingAmount.toFixed(2)} ج.م</p></div>
+       </div>
       </div>
       {state.error&&<p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{state.error}</p>}
       <DialogFooter><Button type="submit" disabled={pending||!customerId||!carId}>{pending&&<Loader2 className="size-4 animate-spin"/>}حفظ أمر العمل</Button><Button type="button" variant="outline" onClick={()=>setOpen(false)}>إلغاء</Button></DialogFooter>
