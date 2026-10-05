@@ -41,6 +41,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
  const remainingAmount=Math.max(0,Math.round((totalAmount-amountPaid)*100)/100)
  const addItem=(id:string)=>{if(!id)return;setItems(x=>x.some(i=>i.part_id===id)?x:x.concat({part_id:id,quantity:1}))}
  const updateQty=(id:string,q:number)=>setItems(x=>q<=0?x.filter(i=>i.part_id!==id):x.map(i=>i.part_id===id?{...i,quantity:q}:i))
+ const removeItem=(id:string)=>setItems(x=>x.filter(i=>i.part_id!==id))
  useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
  return <>
   <Button onClick={()=>setOpen(true)} className="h-10"><Plus className="size-4"/>إضافة أمر عمل</Button>
@@ -92,7 +93,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
       </div>
       <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">يتم عرض مخزون الفرع المختار فقط، والأسعار تُسحب تلقائياً من سعر البيع في المخزن.</p>
       <div><Label>الأعطال</Label><Textarea name="faults" rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
-      <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty}/>
+      <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الفلاتر" items={items} stock={filters} onAdd={addItem} onQty={updateQty}/>
       <StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty}/>
       <div><Label>الإصلاحات التي تم تنفيذها</Label><Textarea name="repairs_done" rows={3} className="mt-1.5" placeholder="اكتب الإصلاحات والأعمال التي تم تنفيذها"/></div>
@@ -121,7 +122,7 @@ function Info({label,value}:{label:string;value:unknown}){
  return <div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-0.5 text-sm font-medium">{text}</p></div>
 }
 
-function StockSection({title,items,stock,onAdd,onQty}:{title:string;items:{part_id:string;quantity:number}[];stock:Stock[];onAdd:(id:string)=>void;onQty:(id:string,q:number)=>void}){
+function StockSection({title,items,stock,onAdd,onQty,onRemove}:{title:string;items:{part_id:string;quantity:number}[];stock:Stock[];onAdd:(id:string)=>void;onQty:(id:string,q:number)=>void;onRemove:(id:string)=>void}){
  const selected=items.map(i=>stock.find(s=>s.id===i.part_id)).filter(Boolean) as Stock[]
- return <section className="rounded-lg border p-4"><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">{title}</h3><NativeSelect onChange={e=>{onAdd(e.target.value);e.currentTarget.value=''}} defaultValue=""><option value="">إضافة {title === 'الزيوت'?'زيت':'صنف'}...</option>{stock.map(s=><option key={s.id} value={s.id}>{s.name} — المتاح {s.quantity}</option>)}</NativeSelect></div>{selected.length===0?<p className="text-sm text-muted-foreground">لم تتم إضافة أي {title === 'الزيوت'?'زيوت':'أصناف'}.</p>:<div className="space-y-2">{selected.map(s=>{const q=items.find(i=>i.part_id===s.id)?.quantity||1;return <div key={s.id} className="flex items-center gap-2"><span className="min-w-0 flex-1 text-sm">{s.name} <span className="text-muted-foreground">(متاح {s.quantity})</span></span><Input type="number" min="1" max={s.quantity} value={q} onChange={e=>onQty(s.id,Number(e.target.value))} className="w-24"/><Button type="button" variant="ghost" size="icon-sm" onClick={()=>onQty(s.id,0)}><Trash2 className="size-4"/></Button></div>})}</div>}</section>
+ return <section className="rounded-lg border p-4"><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">{title}</h3><NativeSelect onChange={e=>{onAdd(e.target.value);e.currentTarget.value=''}} defaultValue=""><option value="">إضافة {title === 'الزيوت'?'زيت':'صنف'}...</option>{stock.map(s=><option key={s.id} value={s.id}>{s.name} — المتاح {s.quantity}</option>)}</NativeSelect></div>{selected.length===0?<p className="text-sm text-muted-foreground">لم تتم إضافة أي {title === 'الزيوت'?'زيوت':'أصناف'}.</p>:<div className="space-y-2">{selected.map(s=>{const q=items.find(i=>i.part_id===s.id)?.quantity||1;return <div key={s.id} className="flex items-center gap-2"><span className="min-w-0 flex-1 text-sm">{s.name} <span className="text-muted-foreground">(متاح {s.quantity})</span></span><Input type="number" min="1" max={s.quantity} value={q} onChange={e=>onQty(s.id,Number(e.target.value))} className="w-24"/><Button type="button" variant="ghost" size="icon-sm" onClick={()=>onRemove(s.id)}><Trash2 className="size-4"/></Button></div>})}</div>}</section>
 }
