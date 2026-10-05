@@ -9,7 +9,7 @@ import {
   type LabelMapKey,
 } from '@/lib/labels'
 
-export type RelationKey = 'branches' | 'customers' | 'cars' | 'employees' | 'work_orders'
+export type RelationKey = 'branches' | 'customers' | 'cars' | 'employees' | 'work_orders' | 'vehicle_catalog'
 
 export type Option = { value: string; label: string }
 
@@ -144,8 +144,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     filters: [{ name: 'customer_id', label: 'العميل', relation: 'customers' }],
     fields: [
       { name: 'customer_id', label: 'المالك (العميل)', type: 'relation', relation: 'customers', required: true, fullWidth: true },
-      { name: 'make', label: 'الشركة المصنعة', type: 'text', required: true, placeholder: 'تويوتا' },
-      { name: 'model', label: 'الطراز', type: 'text', required: true, placeholder: 'كامري' },
+      { name: 'make', label: 'الشركة المصنعة', type: 'text', required: true, placeholder: 'اختر الشركة المصنعة' },
+      { name: 'model', label: 'الطراز', type: 'text', required: true, placeholder: 'اختر الطراز' },
       { name: 'year', label: 'سنة الصنع', type: 'number', min: 1950 },
       { name: 'plate_number', label: 'رقم اللوحة', type: 'text', required: true },
       { name: 'color', label: 'اللون', type: 'text' },
