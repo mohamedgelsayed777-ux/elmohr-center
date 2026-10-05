@@ -157,3 +157,67 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const supabase = await requireUser()
+
+  const branchId = String(formData.get('branch_id') ?? '').trim()
+  const customerName = String(formData.get('customer_name') ?? '').trim()
+  const make = String(formData.get('make') ?? '').trim()
+  const model = String(formData.get('model') ?? '').trim()
+  const vin = String(formData.get('vin') ?? '').trim()
+  const employeeId = String(formData.get('employee_id') ?? '').trim()
+  const status = String(formData.get('status') ?? 'pending')
+  const priority = String(formData.get('priority') ?? 'normal')
+  const faults = String(formData.get('faults') ?? '').trim()
+  const repairsDone = String(formData.get('repairs_done') ?? '').trim()
+  const totalAmount = Number(formData.get('total_amount') ?? 0)
+  const paymentMethod = String(formData.get('payment_method') ?? '').trim() || null
+  const itemsRaw = String(formData.get('items_json') ?? '[]')
+
+  if (!UUID_RE.test(branchId)) return { ok: false, error: 'الفرع غير صحيح' }
+  if (!customerName) return { ok: false, error: 'اسم العميل مطلوب' }
+  if (!make || !model) return { ok: false, error: 'اختر الشركة والموديل' }
+  if (!Number.isFinite(totalAmount) || totalAmount < 0) return { ok: false, error: 'إجمالي المبلغ غير صحيح' }
+
+  let items: Array<{ part_id: string; quantity: number }> = []
+  try {
+    const parsed = JSON.parse(itemsRaw)
+    if (!Array.isArray(parsed)) throw new Error()
+    items = parsed
+      .map((item) => ({ part_id: String(item.part_id ?? ''), quantity: Number(item.quantity) }))
+      .filter((item) => UUID_RE.test(item.part_id) && Number.isFinite(item.quantity) && item.quantity > 0)
+  } catch {
+    return { ok: false, error: 'بيانات قطع الغيار غير صحيحة' }
+  }
+
+  const { data, error } = await supabase.rpc('create_work_order_intake', {
+    p_branch_id: branchId,
+    p_customer_name: customerName,
+    p_make: make,
+    p_model: model,
+    p_vin: vin || null,
+    p_employee_id: UUID_RE.test(employeeId) ? employeeId : null,
+    p_status: status,
+    p_priority: priority,
+    p_faults: faults || null,
+    p_repairs_done: repairsDone || null,
+    p_total_amount: totalAmount,
+    p_payment_method: paymentMethod,
+    p_items: items,
+  })
+
+  if (error) {
+    if (error.message.includes('INSUFFICIENT_STOCK')) return { ok: false, error: 'الكمية المطلوبة غير متوفرة في المخزن' }
+    if (error.message.includes('PART_NOT_FOUND')) return { ok: false, error: 'إحدى قطع الغيار غير موجودة في المخزن' }
+    if (error.message.includes('INVALID_PAYMENT')) return { ok: false, error: 'طريقة الدفع غير صحيحة' }
+    return { ok: false, error: friendlyDbError(error.code) }
+  }
+
+  revalidatePath('/work-orders')
+  revalidatePath('/customers')
+  revalidatePath('/cars')
+  revalidatePath('/parts')
+  revalidatePath('/')
+  return { ok: true, at: Date.now() }
+}
