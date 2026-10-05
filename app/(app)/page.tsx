@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Car, ClipboardList, FileText, Users, Wallet, ArrowLeft, Plus } from 'lucide-react'
+import { Car, ClipboardList, FileText, Users, Wallet, ArrowLeft, Plus, Package, Filter, Droplets, ClipboardCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { formatCurrency, formatDate, formatNumber } from '@/lib/format'
 import { PageHeader } from '@/components/app/page-header'
@@ -14,12 +14,16 @@ async function countRows(supabase: Awaited<ReturnType<typeof createClient>>, tab
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const [customers, cars, workOrders, invoices, expenses] = await Promise.all([
+  const [customers, cars, workOrders, invoices, expenses, partsStock, filtersStock, oilsStock, attendanceToday] = await Promise.all([
     countRows(supabase, 'customers'),
     countRows(supabase, 'cars'),
     countRows(supabase, 'work_orders'),
     countRows(supabase, 'invoices'),
     countRows(supabase, 'expenses'),
+    supabase.from('parts').select('id', { count: 'exact', head: true }).eq('inventory_type', 'part').then(r => r.count ?? 0),
+    supabase.from('parts').select('id', { count: 'exact', head: true }).eq('inventory_type', 'filter').then(r => r.count ?? 0),
+    supabase.from('parts').select('id', { count: 'exact', head: true }).eq('inventory_type', 'oil').then(r => r.count ?? 0),
+    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('attendance_date', new Date().toISOString().slice(0, 10)).then(r => r.count ?? 0),
   ])
 
   const { data: recentOrders } = await supabase
@@ -34,6 +38,10 @@ export default async function DashboardPage() {
     { label: 'أوامر العمل', value: workOrders, icon: ClipboardList, href: '/work-orders' },
     { label: 'الفواتير', value: invoices, icon: FileText, href: '/invoices' },
     { label: 'المصروفات', value: expenses, icon: Wallet, href: '/expenses' },
+    { label: 'مخزن قطع الغيار', value: partsStock, icon: Package, href: '/parts?inventory_type=part' },
+    { label: 'مخزن الفلاتر', value: filtersStock, icon: Filter, href: '/parts?inventory_type=filter' },
+    { label: 'مخزن الزيوت', value: oilsStock, icon: Droplets, href: '/parts?inventory_type=oil' },
+    { label: 'حضور اليوم', value: attendanceToday, icon: ClipboardCheck, href: '/attendance' },
   ]
 
   return (
