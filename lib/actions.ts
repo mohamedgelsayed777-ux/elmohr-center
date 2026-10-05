@@ -217,7 +217,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     return { ok: false, error: friendlyDbError(error.code) }
   }
 
-  const { data: createdOrder } = await supabase.from('work_orders').select('id,customer_id,branch_id').order('created_at',{ascending:false}).limit(1).maybeSingle()
+  const { data: createdOrder } = await supabase.from('work_orders').select('id,customer_id,branch_id').eq('id', String(data)).maybeSingle()
   const { data: pricedParts } = items.length ? await supabase.from('parts').select('id,name,sale_price,inventory_type').in('id',items.map(i=>i.part_id)) : { data: [] as any[] }
   const partsTotal = items.reduce((sum,item)=>sum + Number(pricedParts?.find(p=>p.id===item.part_id)?.sale_price ?? 0) * item.quantity,0)
   const totalAmount = Math.round((partsTotal + laborAmount) * 100) / 100
