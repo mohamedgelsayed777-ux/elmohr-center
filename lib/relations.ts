@@ -35,6 +35,12 @@ const RELATION_QUERIES: Record<
     order: 'full_name',
     label: (r) => `${r.full_name ?? ''} — ${r.job_title ?? ''}`,
   },
+  vehicle_catalog: {
+    table: 'vehicle_catalog',
+    select: 'id, make, model',
+    order: 'make',
+    label: (r) => `${r.make ?? ''} — ${r.model ?? ''}`,
+  },
   work_orders: {
     table: 'work_orders',
     select: 'id, order_number, customer:customers(full_name)',
@@ -47,6 +53,7 @@ export async function loadRelationOptions(resource: Resource) {
   const keys = new Set<RelationKey>()
   resource.fields.forEach((f) => f.relation && keys.add(f.relation))
   resource.filters.forEach((f) => f.relation && keys.add(f.relation))
+  if (resource.key === 'cars') keys.add('vehicle_catalog')
 
   const supabase = await createClient()
   const entries = await Promise.all(
@@ -58,7 +65,7 @@ export async function loadRelationOptions(resource: Resource) {
         .order(q.order, { ascending: key !== 'work_orders' })
         .limit(500)
       const options: Option[] = ((data ?? []) as unknown as Row[]).map((r) => ({
-        value: String(r.id),
+        value: key === 'vehicle_catalog' ? `${r.make}|||${r.model}` : String(r.id),
         label: q.label(r),
       }))
       return [key, options] as const
