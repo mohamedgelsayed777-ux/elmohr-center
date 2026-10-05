@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { saveWorkOrderIntake, type ActionState } from '@/lib/actions'
 
 type Option={value:string;label:string}
-type Stock={id:string;name:string;quantity:number;sale_price:number;inventory_type:'part'|'oil'}
+type Stock={id:string;name:string;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil'}
 type Props={branches:Option[]; employees:Option[]; vehicles:{make:string;model:string}[]; stock:Stock[]}
 
 const initialState:ActionState={ok:false}
@@ -26,6 +26,7 @@ export function WorkOrderFormDialog({branches,employees,vehicles,stock}:Props){
  const makes=useMemo(()=>Array.from(new Set(vehicles.map(v=>v.make))).sort((a,b)=>a.localeCompare(b,'ar')),[vehicles])
  const models=useMemo(()=>vehicles.filter(v=>v.make===make).map(v=>v.model),[vehicles,make])
  const parts=stock.filter(s=>s.inventory_type==='part')
+ const filters=stock.filter(s=>s.inventory_type==='filter')
  const oils=stock.filter(s=>s.inventory_type==='oil')
  const addItem=(id:string)=>{if(!id)return;setItems(x=>x.some(i=>i.part_id===id)?x:x.concat({part_id:id,quantity:1}))}
  const updateQty=(id:string,q:number)=>setItems(x=>x.map(i=>i.part_id===id?{...i,quantity:q}:i))
@@ -47,12 +48,12 @@ export function WorkOrderFormDialog({branches,employees,vehicles,stock}:Props){
        <div><Label>الحالة *</Label><NativeSelect name="status" defaultValue="pending"><option value="pending">قيد الانتظار</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="ready">جاهزة للتسليم</option><option value="delivered">تم التسليم</option><option value="cancelled">ملغي</option></NativeSelect></div>
        <div><Label>الأولوية</Label><NativeSelect name="priority" defaultValue="normal"><option value="low">منخفضة</option><option value="normal">عادية</option><option value="high">عالية</option><option value="urgent">عاجلة</option></NativeSelect></div>
       </div>
-      <div><Label>الأعطال</Label><Textarea name="faults" rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
+      <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">أسعار القطع والفلاتر والزيوت تُسحب تلقائياً من سعر البيع في المخزن، والإجمالي النهائي = الأصناف + المصنعيات.</p><div><Label>الأعطال</Label><Textarea name="faults" rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
       <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty}/>
-      <StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty}/>
+      <StockSection title="الفلاتر" items={items} stock={filters} onAdd={addItem} onQty={updateQty}/><StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty}/>
       <div><Label>الإصلاحات التي تم تنفيذها</Label><Textarea name="repairs_done" rows={3} className="mt-1.5" placeholder="اكتب الإصلاحات والأعمال التي تم تنفيذها"/></div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-       <div><Label>إجمالي المبلغ *</Label><Input name="total_amount" type="number" min="0" step="0.01" defaultValue="0" required className="mt-1.5"/></div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+       <div><Label>المصنعيات</Label><Input name="labor_amount" type="number" min="0" step="0.01" defaultValue="0" className="mt-1.5"/></div><div><Label>المدفوع</Label><Input name="amount_paid" type="number" min="0" step="0.01" defaultValue="0" className="mt-1.5"/></div>
        <div><Label>طريقة الدفع</Label><NativeSelect name="payment_method"><option value="">اختر</option><option value="cash">نقدي</option><option value="instapay">إنستاباي</option><option value="wallet">محفظة</option><option value="visa">فيزا</option></NativeSelect></div>
       </div>
       {state.error&&<p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{state.error}</p>}
