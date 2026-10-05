@@ -96,6 +96,12 @@ export async function saveRecord(
   }
 
   if (resource.key === 'parts') {
+    // inventory_type is hidden in the warehouse-specific form, so read it explicitly.
+    const inventoryType = String(formData.get('inventory_type') ?? '').trim()
+    if (!['part', 'filter', 'oil'].includes(inventoryType)) {
+      return { ok: false, error: 'نوع المخزون غير صحيح' }
+    }
+    payload.inventory_type = inventoryType
     const [{ data: role }, { data: branch }] = await Promise.all([
       supabase.rpc('current_user_role'),
       supabase.rpc('current_user_branch_id'),
