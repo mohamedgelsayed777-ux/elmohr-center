@@ -223,6 +223,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     if (error.message.includes('CUSTOMER_NOT_FOUND')) return { ok: false, error: 'العميل غير موجود' }
     if (error.message.includes('CAR_NOT_BELONG_TO_CUSTOMER')) return { ok: false, error: 'السيارة المختارة غير مسجلة باسم هذا العميل' }
     if (error.message.includes('INSUFFICIENT_STOCK')) return { ok: false, error: 'الكمية المطلوبة غير متوفرة في المخزن' }
+    if (error.message.includes('PART_BRANCH_MISMATCH')) return { ok: false, error: 'قطعة الغيار المختارة تابعة لفرع مختلف عن فرع أمر العمل' }
     if (error.message.includes('PART_NOT_FOUND')) return { ok: false, error: 'إحدى قطع الغيار غير موجودة في المخزن' }
     if (error.message.includes('INVALID_PAYMENT')) return { ok: false, error: 'طريقة الدفع غير صحيحة' }
     if (error.message.includes('INVALID_STATUS')) return { ok: false, error: 'حالة أمر العمل غير صحيحة' }
