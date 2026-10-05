@@ -6,6 +6,7 @@ export const WORK_ORDER_STATUS: LabelMap = {
   pending: { label: 'قيد الانتظار', tone: 'warning' },
   in_progress: { label: 'قيد التنفيذ', tone: 'info' },
   completed: { label: 'مكتمل', tone: 'success' },
+  ready: { label: 'جاهزة للتسليم', tone: 'primary' },
   delivered: { label: 'تم التسليم', tone: 'primary' },
   cancelled: { label: 'ملغي', tone: 'danger' },
 }
