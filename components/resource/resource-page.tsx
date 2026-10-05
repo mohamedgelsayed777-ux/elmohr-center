@@ -41,12 +41,20 @@ export async function ResourcePage({
 
   const page = Math.max(1, Number.parseInt(param(searchParams, 'page'), 10) || 1)
   const search = sanitizeSearch(param(searchParams, 'q'))
+  const month = param(searchParams, 'month')
 
   let query = supabase
     .from(resource.table)
     .select(resource.select, { count: 'exact' })
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
+
+  if (resourceKey === 'work_orders' && /^\\d{4}-\\d{2}$/.test(month)) {
+    const [year, monthNumber] = month.split('-').map(Number)
+    const start = new Date(Date.UTC(year, monthNumber - 1, 1)).toISOString()
+    const end = new Date(Date.UTC(year, monthNumber, 1)).toISOString()
+    query = query.gte('opened_at', start).lt('opened_at', end)
+  }
 
   if (search && resource.searchColumns.length) {
     const numeric = /^\d+$/.test(search)
