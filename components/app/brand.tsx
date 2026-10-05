@@ -5,7 +5,7 @@ export function Brand({ className, inverted = false }: { className?: string; inv
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
       <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white">
-        <Image src="/elmohr-logo.jpg" alt="مركز المهر" width={40} height={40} className="h-full w-full object-cover" priority />
+        <Image src="/elmohr-logo.jpg" alt="مركز المهر" width={40} height={40} className="h-full w-full object-contain" priority unoptimized />
       </div>
       <div className="flex flex-col leading-tight">
         <span className={cn('text-base font-bold', inverted ? 'text-sidebar-accent-foreground' : 'text-foreground')}>
