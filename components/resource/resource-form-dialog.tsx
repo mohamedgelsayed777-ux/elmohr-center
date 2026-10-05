@@ -40,6 +40,10 @@ function initialValue(field: Field, record?: Record<string, unknown>) {
 
 export function ResourceFormDialog({ resourceKey, singular, fields, relationOptions, record }: Props) {
   const [open, setOpen] = useState(false)
+  const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
+  const catalog = relationOptions.vehicle_catalog ?? []
+  const makes = useMemo(() => Array.from(new Set(catalog.map((o) => o.value.split('|||')[0]))).filter(Boolean), [catalog])
+  const models = useMemo(() => catalog.filter((o) => o.value.startsWith(`${selectedMake}|||`)).map((o) => o.value.split('|||')[1]), [catalog, selectedMake])
   const id = (record?.id as string | undefined) ?? null
   const isEdit = Boolean(id)
   const [state, formAction, isPending] = useActionState(saveRecord.bind(null, resourceKey, id), initialState)
@@ -78,6 +82,14 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                     field={field}
                     value={initialValue(field, record)}
                     options={field.relation ? relationOptions[field.relation] ?? [] : field.options ?? []}
+                    specialOptions={
+                      resourceKey === 'cars' && field.name === 'make'
+                        ? makes.map((make) => ({ value: make, label: make }))
+                        : resourceKey === 'cars' && field.name === 'model'
+                          ? models.map((model) => ({ value: model, label: model }))
+                          : undefined
+                    }
+                    onSpecialChange={resourceKey === 'cars' && field.name === 'make' ? setSelectedMake : undefined}
                   />
                 ))}
               </div>
@@ -103,7 +115,19 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   )
 }
 
-function FieldInput({ field, value, options }: { field: Field; value: unknown; options: Option[] }) {
+function FieldInput({
+  field,
+  value,
+  options,
+  specialOptions,
+  onSpecialChange,
+}: {
+  field: Field
+  value: unknown
+  options: Option[]
+  specialOptions?: Option[]
+  onSpecialChange?: (value: string) => void
+}) {
   const inputId = `field-${field.name}`
   const wrapper = cn('flex flex-col gap-1.5', field.fullWidth && 'sm:col-span-2')
   const label = (
@@ -156,6 +180,27 @@ function FieldInput({ field, value, options }: { field: Field; value: unknown; o
         {field.type === 'relation' && options.length === 0 && (
           <p className="text-xs text-muted-foreground">لا توجد سجلات متاحة بعد</p>
         )}
+        {hint}
+      </div>
+    )
+  }
+
+  if (specialOptions) {
+    return (
+      <div className={wrapper}>
+        {label}
+        <NativeSelect
+          id={inputId}
+          name={field.name}
+          defaultValue={String(value)}
+          required={field.required}
+          onChange={onSpecialChange ? (e) => onSpecialChange(e.target.value) : undefined}
+        >
+          <option value="">اختر...</option>
+          {specialOptions.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </NativeSelect>
         {hint}
       </div>
     )
