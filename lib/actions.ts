@@ -51,9 +51,9 @@ function parseField(field: Field, formData: FormData): { value: unknown; error?:
     case 'relation':
       return UUID_RE.test(raw) ? { value: raw } : { value: null, error: `اختيار "${field.label}" غير صحيح` }
     case 'select':
-      return field.options?.some((o) => o.value === raw)
-        ? { value: raw }
-        : { value: null, error: `اختيار "${field.label}" غير صحيح` }
+      const allowedCategory = field.name === 'category' && ['ميكانيكا','كهرباء','عفشة','كماليات','فلاتر هواء','فلاتر زيت','زيت موتور','زيت فتيس','اصناف اخرى'].includes(raw)
+      const allowed = field.options?.some((o) => o.value === raw) || allowedCategory
+      return allowed ? { value: raw } : { value: null, error: 'اختيار غير صحيح' }
     default:
       return { value: raw }
   }
