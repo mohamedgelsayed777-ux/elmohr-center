@@ -5,7 +5,7 @@ export function Brand({ className, inverted = false }: { className?: string; inv
     <div className={cn('flex items-center gap-2.5', className)}>
       <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-white">
         <img
-          src="/elmohr-logo.svg?v=4"
+          src="/elmohr-logo-user.jpg?v=5"
           alt="مركز المهر"
           width="40"
           height="40"
