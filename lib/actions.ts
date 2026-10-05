@@ -173,14 +173,15 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   const priority = String(formData.get('priority') ?? 'normal')
   const faults = String(formData.get('faults') ?? '').trim()
   const repairsDone = String(formData.get('repairs_done') ?? '').trim()
-  const totalAmount = Number(formData.get('total_amount') ?? 0)
+  const laborAmount = Number(formData.get('labor_amount') ?? 0)
+  const amountPaid = Number(formData.get('amount_paid') ?? 0)
   const paymentMethod = String(formData.get('payment_method') ?? '').trim() || null
   const itemsRaw = String(formData.get('items_json') ?? '[]')
 
   if (!UUID_RE.test(branchId)) return { ok: false, error: 'الفرع غير صحيح' }
   if (!customerName) return { ok: false, error: 'اسم العميل مطلوب' }
   if (!make || !model) return { ok: false, error: 'اختر الشركة والموديل' }
-  if (!Number.isFinite(totalAmount) || totalAmount < 0) return { ok: false, error: 'إجمالي المبلغ غير صحيح' }
+  if (!Number.isFinite(laborAmount) || laborAmount < 0 || !Number.isFinite(amountPaid) || amountPaid < 0) return { ok: false, error: 'المبالغ المدخلة غير صحيحة' }
 
   let items: Array<{ part_id: string; quantity: number }> = []
   try {
@@ -204,7 +205,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     p_priority: priority,
     p_faults: faults || null,
     p_repairs_done: repairsDone || null,
-    p_total_amount: totalAmount,
+    p_total_amount: 0,
     p_payment_method: paymentMethod,
     p_items: items,
   })
@@ -216,6 +217,19 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     return { ok: false, error: friendlyDbError(error.code) }
   }
 
+  const { data: createdOrder } = await supabase.from('work_orders').select('id,customer_id,branch_id').order('created_at',{ascending:false}).limit(1).maybeSingle()
+  const { data: pricedParts } = items.length ? await supabase.from('parts').select('id,name,sale_price,inventory_type').in('id',items.map(i=>i.part_id)) : { data: [] as any[] }
+  const partsTotal = items.reduce((sum,item)=>sum + Number(pricedParts?.find(p=>p.id===item.part_id)?.sale_price ?? 0) * item.quantity,0)
+  const totalAmount = Math.round((partsTotal + laborAmount) * 100) / 100
+  if (amountPaid > totalAmount) return { ok:false, error:'المبلغ المدفوع أكبر من إجمالي الفاتورة' }
+  if (createdOrder) {
+    await supabase.from('work_orders').update({total_amount:totalAmount,labor_amount:laborAmount,amount_paid:amountPaid}).eq('id',createdOrder.id)
+    const { data: invoice } = await supabase.from('invoices').insert({work_order_id:createdOrder.id,customer_id:createdOrder.customer_id,branch_id:createdOrder.branch_id,subtotal:totalAmount,discount:0,tax:0,total:totalAmount,paid_amount:amountPaid,status:amountPaid<=0?'unpaid':amountPaid>=totalAmount?'paid':'partial',payment_method:paymentMethod==='visa'?'card':paymentMethod==='instapay'?'transfer':paymentMethod==='wallet'?'other':paymentMethod}).select('id').single()
+    if (invoice) {
+      if (pricedParts?.length) await supabase.from('invoice_items').insert(items.map(item=>{const p=pricedParts.find(x=>x.id===item.part_id);return {invoice_id:invoice.id,item_type:p?.inventory_type ?? 'part',part_id:item.part_id,description:p?.name ?? 'صنف',quantity:item.quantity,unit_price:Number(p?.sale_price??0),total:Math.round(Number(p?.sale_price??0)*item.quantity*100)/100}}))
+      if (laborAmount>0) await supabase.from('invoice_items').insert({invoice_id:invoice.id,item_type:'labor',description:'مصنعيات',quantity:1,unit_price:laborAmount,total:laborAmount})
+    }
+  }
   revalidatePath('/work-orders')
   revalidatePath('/customers')
   revalidatePath('/cars')
