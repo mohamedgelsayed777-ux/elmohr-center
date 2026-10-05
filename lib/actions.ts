@@ -144,11 +144,15 @@ export async function saveRecord(
     }
   }
 
-  const { error } = id
-    ? await supabase.from(resource.table).update(payload).eq('id', id)
-    : await supabase.from(resource.table).insert(payload)
-
-  if (error) return { ok: false, error: friendlyDbError(error.code) }
+  if (resource.key === 'parts') {
+    const { error } = await supabase.rpc('save_inventory_part', { p_payload: payload, p_id: id })
+    if (error) return { ok: false, error: friendlyDbError(error.code) }
+  } else {
+    const { error } = id
+      ? await supabase.from(resource.table).update(payload).eq('id', id)
+      : await supabase.from(resource.table).insert(payload)
+    if (error) return { ok: false, error: friendlyDbError(error.code) }
+  }
 
   revalidatePath(resource.path)
   revalidatePath('/')
