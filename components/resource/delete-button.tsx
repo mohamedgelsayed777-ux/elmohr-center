@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -16,6 +17,7 @@ import { deleteRecord } from '@/lib/actions'
 
 export function DeleteButton({ resourceKey, id, singular }: { resourceKey: string; id: string; singular: string }) {
   const [open, setOpen] = useState(false)
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
   function onConfirm() {
@@ -24,6 +26,7 @@ export function DeleteButton({ resourceKey, id, singular }: { resourceKey: strin
       if (result.ok) {
         setOpen(false)
         toast.success(`تم حذف ${singular}`)
+        router.refresh()
       } else {
         toast.error(result.error ?? 'تعذر الحذف')
       }
