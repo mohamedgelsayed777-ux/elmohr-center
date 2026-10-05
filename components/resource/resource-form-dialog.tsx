@@ -91,9 +91,9 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                         : resourceKey === 'cars' && field.name === 'model'
                           ? models.map((model) => ({ value: model, label: model }))
                           : resourceKey === 'parts' && field.name === 'category'
-                            ? (selectedInventoryType === 'part'
+                            ? ((inventoryType ?? selectedInventoryType) === 'part'
                                 ? ['ميكانيكا', 'كهرباء', 'عفشة', 'كماليات', 'اصناف اخرى']
-                                : selectedInventoryType === 'filter'
+                                : (inventoryType ?? selectedInventoryType) === 'filter'
                                   ? ['فلاتر هواء', 'فلاتر زيت', 'اصناف اخرى']
                                   : ['زيت موتور', 'زيت فتيس', 'اصناف اخرى']
                               ).map((x) => ({ value: x, label: x }))
