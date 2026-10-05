@@ -65,6 +65,7 @@ export async function ResourcePage({
     if (clauses.length) query = query.or(clauses.join(','))
   }
 
+  const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
   const toolbarFilters: ToolbarFilter[] = []
   for (const filter of resource.filters) {
     const options = filter.relation ? relationOptions[filter.relation] ?? [] : filter.options ?? []
@@ -73,6 +74,10 @@ export async function ResourcePage({
     if (!value) continue
     const valid = filter.relation ? UUID_RE.test(value) : options.some((o) => o.value === value)
     if (valid) query = query.eq(filter.name, value)
+  }
+
+  if (resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType)) {
+    query = query.eq('inventory_type', inventoryType)
   }
 
   const { data, count, error } = await query
