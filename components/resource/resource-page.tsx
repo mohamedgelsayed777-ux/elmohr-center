@@ -38,6 +38,7 @@ export async function ResourcePage({
   const resource = RESOURCES[resourceKey]
   const supabase = await createClient()
   const relationOptions = await loadRelationOptions(resource)
+  const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
 
   const page = Math.max(1, Number.parseInt(param(searchParams, 'page'), 10) || 1)
   const search = sanitizeSearch(param(searchParams, 'q'))
@@ -65,7 +66,6 @@ export async function ResourcePage({
     if (clauses.length) query = query.or(clauses.join(','))
   }
 
-  const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
   const categoryOptionsByInventoryType = {
     part: ['ميكانيكا', 'كهرباء', 'عفشة', 'كماليات', 'اصناف اخرى'],
     filter: ['فلاتر هواء', 'فلاتر زيت', 'اصناف اخرى'],
@@ -121,6 +121,7 @@ export async function ResourcePage({
               singular={resource.singular}
               fields={resource.fields}
               relationOptions={relationOptions}
+              inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
             />
           )
         }
@@ -169,6 +170,7 @@ export async function ResourcePage({
                       fields={resource.fields}
                       relationOptions={relationOptions}
                       record={row}
+                      inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
                     />
                     <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />
                   </div>
