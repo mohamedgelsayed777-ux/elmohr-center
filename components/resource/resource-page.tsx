@@ -92,12 +92,14 @@ export async function ResourcePage({
         title={resource.title}
         description={resource.description}
         actions={
-          {headerActions ?? <ResourceFormDialog
-            resourceKey={resource.key}
-            singular={resource.singular}
-            fields={resource.fields}
-            relationOptions={relationOptions}
-          />}
+          headerActions ?? (
+            <ResourceFormDialog
+              resourceKey={resource.key}
+              singular={resource.singular}
+              fields={resource.fields}
+              relationOptions={relationOptions}
+            />
+          )
         }
       />
 
