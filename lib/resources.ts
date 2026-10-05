@@ -343,6 +343,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { key: 'customer.full_name', label: 'العميل', secondary: true },
       { key: 'total', label: 'الإجمالي', format: 'currency' },
       { key: 'paid_amount', label: 'المدفوع', format: 'currency', hideOnMobile: true },
+      { key: 'remaining_amount', label: 'المتبقي المطلوب', format: 'currency' },
       { key: 'status', label: 'الحالة', format: 'badge', labelMap: 'invoiceStatus' },
       { key: 'payment_method', label: 'طريقة الدفع', format: 'badge', labelMap: 'paymentMethod', hideOnMobile: true },
       { key: 'issued_at', label: 'التاريخ', format: 'date', hideOnMobile: true },
