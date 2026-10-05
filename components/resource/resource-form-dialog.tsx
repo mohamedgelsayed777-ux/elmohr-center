@@ -34,6 +34,7 @@ function initialValue(field: Field, record?: Record<string, unknown>) {
   const v = record?.[field.name]
   if (v !== undefined && v !== null) return v
   if (field.type === 'date' && !record) return new Date().toISOString().slice(0, 10)
+  if (field.type === 'time' && !record) return new Date().toTimeString().slice(0, 5)
   return field.defaultValue ?? ''
 }
 
