@@ -5,6 +5,9 @@ import {
   ClipboardList,
   LayoutDashboard,
   Package,
+  Filter,
+  Droplets,
+  ClipboardCheck,
   Receipt,
   Users,
   UserCog,
@@ -33,7 +36,9 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'الخدمات والمخزون',
     items: [
       { href: '/services', label: 'الخدمات', icon: Wrench },
-      { href: '/parts', label: 'قطع الغيار', icon: Package },
+      { href: '/parts?inventory_type=part', label: 'مخزن قطع الغيار', icon: Package },
+      { href: '/parts?inventory_type=filter', label: 'مخزن الفلاتر', icon: Filter },
+      { href: '/parts?inventory_type=oil', label: 'مخزن الزيوت', icon: Droplets },
     ],
   },
   {
@@ -49,6 +54,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/branches', label: 'الفروع', icon: Building2 },
       { href: '/employees', label: 'الموظفون', icon: UserCog },
+      { href: '/attendance', label: 'سجل الحضور', icon: ClipboardCheck },
     ],
   },
 ]
