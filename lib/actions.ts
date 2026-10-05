@@ -100,7 +100,10 @@ export async function saveRecord(
       supabase.rpc('current_user_role'),
       supabase.rpc('current_user_branch_id'),
     ])
-    if (role === 'reception' || role === 'accountant') {
+    if (role === 'reception') {
+      return { ok: false, error: 'ليس لديك صلاحية لإضافة أصناف المخزن' }
+    }
+    if (role === 'accountant') {
       if (!branch) return { ok: false, error: 'لم يتم تحديد فرع المستخدم' }
       payload.branch_id = branch
     }
