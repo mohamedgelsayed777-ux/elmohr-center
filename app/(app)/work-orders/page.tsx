@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { ResourcePage } from '@/components/resource/resource-page'
-import Link from 'next/link'
 import { WorkOrderFormDialog } from '@/components/work-orders/work-order-form-dialog'
 import { RESOURCES } from '@/lib/resources'
 
