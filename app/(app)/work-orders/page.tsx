@@ -39,7 +39,7 @@ export default async function Page({ searchParams }: PageProps<'/work-orders'>) 
           branches={(branches ?? []).map(x => ({ value: x.id, label: x.name }))}
           employees={(employees ?? []).map(x => ({ value: x.id, label: x.full_name }))}
           vehicles={vehicles ?? []}
-          stock={(stock ?? []).map(x => ({ ...x, inventory_type: (x.inventory_type === 'oil' ? 'oil' : 'part') as 'part'|'oil' }))}
+          stock={(stock ?? []).map(x => ({ ...x, inventory_type: (x.inventory_type === 'oil' ? 'oil' : x.inventory_type === 'filter' ? 'filter' : 'part') as 'part'|'filter'|'oil' }))}
           />
         </div>
       }
