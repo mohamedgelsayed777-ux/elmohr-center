@@ -268,11 +268,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     searchPlaceholder: 'ابحث باسم القطعة أو الرمز...',
     filters: [
       branchFilter,
-      { name: 'inventory_type', label: 'نوع المخزون', options: [
-        { value: 'part', label: 'قطع غيار' },
-        { value: 'filter', label: 'فلاتر' },
-        { value: 'oil', label: 'زيوت' },
-      ] },
       { name: 'category', label: 'التصنيف', options: [
         { value: 'ميكانيكا', label: 'ميكانيكا' },
         { value: 'كهرباء', label: 'كهرباء' },
