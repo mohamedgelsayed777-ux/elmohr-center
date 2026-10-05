@@ -21,6 +21,7 @@ export type FieldType =
   | 'textarea'
   | 'select'
   | 'date'
+  | 'time'
   | 'boolean'
   | 'relation'
 
@@ -77,6 +78,7 @@ export type ResourceKey =
   | 'invoices'
   | 'employees'
   | 'expenses'
+  | 'attendance'
 
 export type Resource = {
   key: ResourceKey
@@ -260,12 +262,24 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     title: 'قطع الغيار',
     singular: 'قطعة غيار',
     description: 'مخزون قطع الغيار والكميات والأسعار',
-    select: 'id, name, sku, brand, quantity, min_quantity, cost_price, sale_price, branch_id, created_at, branch:branches(name)',
+    select: 'id, name, sku, brand, inventory_type, quantity, min_quantity, cost_price, sale_price, branch_id, created_at, branch:branches(name)',
     orderBy: { column: 'name', ascending: true },
     searchColumns: ['name', 'sku', 'brand'],
     searchPlaceholder: 'ابحث باسم القطعة أو الرمز...',
-    filters: [branchFilter],
+    filters: [
+      branchFilter,
+      { name: 'inventory_type', label: 'نوع المخزون', options: [
+        { value: 'part', label: 'قطع غيار' },
+        { value: 'filter', label: 'فلاتر' },
+        { value: 'oil', label: 'زيوت' },
+      ] },
+    ],
     fields: [
+      { name: 'inventory_type', label: 'نوع المخزون', type: 'select', required: true, options: [
+        { value: 'part', label: 'قطعة غيار' },
+        { value: 'filter', label: 'فلتر' },
+        { value: 'oil', label: 'زيت' },
+      ], defaultValue: 'part' },
       { name: 'name', label: 'اسم القطعة', type: 'text', required: true, fullWidth: true },
       { name: 'sku', label: 'رمز القطعة (SKU)', type: 'text' },
       { name: 'brand', label: 'العلامة التجارية', type: 'text' },
@@ -277,6 +291,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     ],
     columns: [
       { key: 'name', label: 'القطعة', primary: true },
+      { key: 'inventory_type', label: 'النوع', format: 'badge' },
       { key: 'sku', label: 'الرمز', format: 'code', secondary: true },
       { key: 'brand', label: 'العلامة', hideOnMobile: true },
       { key: 'quantity', label: 'الكمية', format: 'number' },
@@ -397,6 +412,45 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       branchColumn,
     ],
   },
+  attendance: {
+    key: 'attendance',
+    table: 'attendance',
+    path: '/attendance',
+    title: 'سجل الحضور',
+    singular: 'سجل حضور',
+    description: 'تسجيل حضور وانصراف الموظفين يومياً',
+    select: 'id, employee_id, attendance_date, check_in, check_out, status, notes, employee:employees(full_name, job_title)',
+    orderBy: { column: 'attendance_date', ascending: false },
+    searchColumns: [],
+    searchPlaceholder: '',
+    filters: [
+      { name: 'status', label: 'الحالة', options: [
+        { value: 'present', label: 'حاضر' }, { value: 'late', label: 'متأخر' },
+        { value: 'absent', label: 'غائب' }, { value: 'leave', label: 'إجازة' },
+      ] },
+      { name: 'employee_id', label: 'الموظف', relation: 'employees' },
+    ],
+    fields: [
+      { name: 'employee_id', label: 'الموظف', type: 'relation', relation: 'employees', required: true },
+      { name: 'attendance_date', label: 'التاريخ', type: 'date', required: true },
+      { name: 'check_in', label: 'وقت الحضور', type: 'time' },
+      { name: 'check_out', label: 'وقت الانصراف', type: 'time' },
+      { name: 'status', label: 'الحالة', type: 'select', required: true, defaultValue: 'present', options: [
+        { value: 'present', label: 'حاضر' }, { value: 'late', label: 'متأخر' },
+        { value: 'absent', label: 'غائب' }, { value: 'leave', label: 'إجازة' },
+      ] },
+      { name: 'notes', label: 'ملاحظات', type: 'textarea', fullWidth: true },
+    ],
+    columns: [
+      { key: 'employee.full_name', label: 'الموظف', primary: true },
+      { key: 'attendance_date', label: 'التاريخ', format: 'date' },
+      { key: 'check_in', label: 'الحضور' },
+      { key: 'check_out', label: 'الانصراف' },
+      { key: 'status', label: 'الحالة', format: 'badge' },
+      { key: 'notes', label: 'ملاحظات', secondary: true, hideOnMobile: true },
+    ],
+  },
+
 }
 
 export function getResource(key: string): Resource | null {
