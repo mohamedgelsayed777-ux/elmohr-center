@@ -66,9 +66,19 @@ export async function ResourcePage({
   }
 
   const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
+  const categoryOptionsByInventoryType = {
+    part: ['ميكانيكا', 'كهرباء', 'عفشة', 'كماليات', 'اصناف اخرى'],
+    filter: ['فلاتر هواء', 'فلاتر زيت', 'اصناف اخرى'],
+    oil: ['زيت موتور', 'زيت فتيس', 'اصناف اخرى'],
+  }
   const toolbarFilters: ToolbarFilter[] = []
   for (const filter of resource.filters) {
-    const options = filter.relation ? relationOptions[filter.relation] ?? [] : filter.options ?? []
+    const options =
+      resourceKey === 'parts' && filter.name === 'category' && inventoryType in categoryOptionsByInventoryType
+        ? categoryOptionsByInventoryType[inventoryType as keyof typeof categoryOptionsByInventoryType].map((value) => ({ value, label: value }))
+        : filter.relation
+          ? relationOptions[filter.relation] ?? []
+          : filter.options ?? []
     toolbarFilters.push({ name: filter.name, label: filter.label, options })
     const value = param(searchParams, filter.name)
     if (!value) continue
