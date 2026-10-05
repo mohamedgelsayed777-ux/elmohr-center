@@ -95,6 +95,17 @@ export async function saveRecord(
     payload[field.name] = value
   }
 
+  if (resource.key === 'parts') {
+    const [{ data: role }, { data: branch }] = await Promise.all([
+      supabase.rpc('current_user_role'),
+      supabase.rpc('current_user_branch_id'),
+    ])
+    if (role === 'reception' || role === 'accountant') {
+      if (!branch) return { ok: false, error: 'لم يتم تحديد فرع المستخدم' }
+      payload.branch_id = branch
+    }
+  }
+
   if (resource.key === 'invoices') {
     const subtotal = Number(payload.subtotal ?? 0)
     const discount = Number(payload.discount ?? 0)
