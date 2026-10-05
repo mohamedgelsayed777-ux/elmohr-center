@@ -39,6 +39,7 @@ export async function ResourcePage({
   const supabase = await createClient()
   const relationOptions = await loadRelationOptions(resource)
   const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
+  const inventoryTitle = resourceKey === 'parts' && inventoryType === 'part' ? 'مخزن قطع الغيار' : resourceKey === 'parts' && inventoryType === 'filter' ? 'مخزن الفلاتر' : resourceKey === 'parts' && inventoryType === 'oil' ? 'مخزن الزيوت' : resource.title
 
   const page = Math.max(1, Number.parseInt(param(searchParams, 'page'), 10) || 1)
   const search = sanitizeSearch(param(searchParams, 'q'))
@@ -112,7 +113,7 @@ export async function ResourcePage({
   return (
     <div className="mx-auto flex max-w-7xl flex-col">
       <PageHeader
-        title={resource.title}
+        title={inventoryTitle}
         description={resource.description}
         actions={
           headerActions ?? (
@@ -235,6 +236,7 @@ export async function ResourcePage({
                           fields={resource.fields}
                           relationOptions={relationOptions}
                           record={row}
+                          inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
                         />
                         <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />
                       </div>
