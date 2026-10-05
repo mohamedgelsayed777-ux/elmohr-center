@@ -183,7 +183,7 @@ function FieldInput({
     return (
       <div className={wrapper}>
         {label}
-        <NativeSelect id={inputId} name={field.name} defaultValue={String(value)} required={field.required}>
+        <NativeSelect id={inputId} name={field.name} defaultValue={String(value)} required={field.required} onChange={onSpecialChange ? (e) => onSpecialChange(e.target.value) : undefined}>
           <option value="">{field.required ? 'اختر...' : 'بدون'}</option>
           {options.map((o) => (
             <option key={o.value} value={o.value}>
