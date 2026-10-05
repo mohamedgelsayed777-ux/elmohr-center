@@ -278,6 +278,10 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
         { value: 'زيت موتور', label: 'زيت موتور' },
         { value: 'زيت فتيس', label: 'زيت فتيس' },
         { value: 'اصناف اخرى', label: 'اصناف اخرى' },
+        { value: 'فلاتر هواء', label: 'فلاتر هواء' },
+        { value: 'فلاتر زيت', label: 'فلاتر زيت' },
+        { value: 'زيت موتور', label: 'زيت موتور' },
+        { value: 'زيت فتيس', label: 'زيت فتيس' },
       ] },
     ],
     fields: [
