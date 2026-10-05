@@ -10,7 +10,7 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
     const path = href.split('?')[0]
     if (role === 'manager') return true
     if (role === 'accountant') return ['/', '/parts', '/invoices', '/expenses', '/reports'].includes(path)
-    return !['/services', '/branches', '/employees', '/attendance', '/invoices', '/expenses', '/reports'].includes(path)
+    return !['/parts', '/services', '/branches', '/employees', '/attendance', '/invoices', '/expenses', '/reports'].includes(path)
   }
 
   return (
