@@ -44,6 +44,12 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   const [open, setOpen] = useState(false)
   const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
   const [selectedInventoryType, setSelectedInventoryType] = useState(String(inventoryType ?? record?.inventory_type ?? 'part'))
+  const [invoiceValues, setInvoiceValues] = useState({
+    work_order_id: String(record?.work_order_id ?? ''),
+    customer_id: String(record?.customer_id ?? ''),
+    branch_id: String(record?.branch_id ?? ''),
+    subtotal: String(record?.subtotal ?? 0),
+  })
   const catalog = relationOptions.vehicle_catalog ?? []
   const makes = useMemo(() => Array.from(new Set(catalog.map((o) => o.value.split('|||')[0]))).filter(Boolean), [catalog])
   const models = useMemo(() => catalog.filter((o) => o.value.startsWith(`${selectedMake}|||`)).map((o) => o.value.split('|||')[1]), [catalog, selectedMake])
@@ -58,6 +64,22 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
       if (resourceKey === 'invoices' && !isEdit && state.recordId) window.open(`/invoices/${state.recordId}/print`, '_blank')
     }
   }, [state, isEdit, singular])
+
+  const invoiceFieldValue = (field: Field) => resourceKey === 'invoices' && field.name in invoiceValues
+    ? invoiceValues[field.name as keyof typeof invoiceValues]
+    : initialValue(field, record)
+
+  const handleInvoiceWorkOrder = (value: string) => {
+    const option = (relationOptions.work_orders ?? []).find((o) => o.value === value)
+    const meta = option?.meta
+    setInvoiceValues((current) => ({
+      ...current,
+      work_order_id: value,
+      customer_id: String(meta?.customer_id ?? ''),
+      branch_id: String(meta?.branch_id ?? ''),
+      subtotal: String(meta?.subtotal ?? 0),
+    }))
+  }
 
   return (
     <>
@@ -85,7 +107,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                   <FieldInput
                     key={`${field.name}-${resourceKey === 'parts' && field.name === 'category' ? selectedInventoryType : ''}`}
                     field={field}
-                    value={initialValue(field, record)}
+                    value={invoiceFieldValue(field)}
                     options={field.relation ? relationOptions[field.relation] ?? [] : field.options ?? []}
                     specialOptions={
                       resourceKey === 'cars' && field.name === 'make'
@@ -101,12 +123,15 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                               ).map((x) => ({ value: x, label: x }))
                             : undefined
                     }
+                    readOnly={resourceKey === 'invoices' && ['customer_id', 'branch_id', 'subtotal'].includes(field.name)}
                     onSpecialChange={
                       resourceKey === 'cars' && field.name === 'make'
                         ? setSelectedMake
                         : resourceKey === 'parts' && field.name === 'inventory_type'
                           ? setSelectedInventoryType
-                          : undefined
+                          : resourceKey === 'invoices' && field.name === 'work_order_id'
+                            ? handleInvoiceWorkOrder
+                            : undefined
                     }
                   />
                 ))}
@@ -139,12 +164,14 @@ function FieldInput({
   options,
   specialOptions,
   onSpecialChange,
+  readOnly = false,
 }: {
   field: Field
   value: unknown
   options: Option[]
   specialOptions?: Option[]
   onSpecialChange?: (value: string) => void
+  readOnly?: boolean
 }) {
   const inputId = `field-${field.name}`
   const wrapper = cn('flex flex-col gap-1.5', field.fullWidth && 'sm:col-span-2')
@@ -194,6 +221,7 @@ function FieldInput({
               {o.label}
             </option>
           ))}
+        {readOnly && <input type="hidden" name={field.name} value={String(value)} />}
         </NativeSelect>
         {field.type === 'relation' && options.length === 0 && (
           <p className="text-xs text-muted-foreground">لا توجد سجلات متاحة بعد</p>
@@ -210,8 +238,9 @@ function FieldInput({
         <NativeSelect
           id={inputId}
           name={field.name}
-          defaultValue={String(value)}
+          value={String(value)}
           required={field.required}
+          disabled={readOnly}
           onChange={onSpecialChange ? (e) => onSpecialChange(e.target.value) : undefined}
         >
           <option value="">اختر...</option>
@@ -233,8 +262,9 @@ function FieldInput({
         id={inputId}
         name={field.name}
         type={field.type}
-        defaultValue={String(value)}
+        value={String(value)}
         required={field.required}
+        readOnly={readOnly}
         placeholder={field.placeholder}
         min={field.min}
         step={field.type === 'number' ? field.step ?? '1' : undefined}
