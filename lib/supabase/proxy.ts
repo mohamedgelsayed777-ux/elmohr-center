@@ -46,7 +46,7 @@ export async function updateSession(request: NextRequest) {
     const role = profile?.role ?? 'reception'
     const managerOnly = ['/branches', '/employees', '/attendance']
     const financeOnly = ['/invoices', '/expenses', '/reports']
-    const accountantAllowed = ['/', ...financeOnly]
+    const accountantAllowed = ['/', ...financeOnly, '/parts', '/services', '/attendance']
     const receptionBlocked = ['/parts', '/services', ...financeOnly, ...managerOnly]
 
     const forbidden =
