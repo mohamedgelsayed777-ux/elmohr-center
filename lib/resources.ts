@@ -452,7 +452,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     title: 'سجل الحضور',
     singular: 'سجل حضور',
     description: 'تسجيل حضور وانصراف الموظفين يومياً',
-    select: 'id, employee_id, attendance_date, check_in, check_out, status, notes, employee:employees(full_name, job_title)',
+    select: 'id, attendance_number, employee_id, attendance_date, check_in, check_out, status, notes, employee:employees(full_name, job_title)',
     orderBy: { column: 'attendance_date', ascending: false },
     searchColumns: [],
     searchPlaceholder: '',
@@ -464,6 +464,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'employee_id', label: 'الموظف', relation: 'employees' },
     ],
     fields: [
+      { name: 'attendance_number', label: 'رقم الحضور', type: 'text', readOnly: true },
       { name: 'employee_id', label: 'الموظف', type: 'relation', relation: 'employees', required: true },
       { name: 'attendance_date', label: 'التاريخ', type: 'date', required: true },
       { name: 'check_in', label: 'وقت الحضور', type: 'time' },
@@ -475,7 +476,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'notes', label: 'ملاحظات', type: 'textarea', fullWidth: true },
     ],
     columns: [
-      { key: 'employee.full_name', label: 'الموظف', primary: true },
+      { key: 'attendance_number', label: 'رقم الحضور', format: 'code', primary: true, prefix: 'ATT-' },
+      { key: 'employee.full_name', label: 'الموظف' },
       { key: 'attendance_date', label: 'التاريخ', format: 'date' },
       { key: 'check_in', label: 'الحضور' },
       { key: 'check_out', label: 'الانصراف' },
