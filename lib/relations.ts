@@ -43,9 +43,9 @@ const RELATION_QUERIES: Record<
   },
   work_orders: {
     table: 'work_orders',
-    select: 'id, order_number, customer:customers(full_name)',
+    select: 'id, order_number, customer_id, branch_id, total_amount, customer:customers(full_name), branch:branches(name)',
     order: 'order_number',
-    label: (r) => `#${r.order_number} — ${(r.customer as Row | null)?.full_name ?? ''}`,
+    label: (r) => `#${r.order_number} — ${(r.customer as Row | null)?.full_name ?? ''} — ${(r.branch as Row | null)?.name ?? ''}`,
   },
 }
 
@@ -67,6 +67,14 @@ export async function loadRelationOptions(resource: Resource) {
       const options: Option[] = ((data ?? []) as unknown as Row[]).map((r) => ({
         value: key === 'vehicle_catalog' ? `${r.make}|||${r.model}` : String(r.id),
         label: q.label(r),
+        meta:
+          key === 'work_orders'
+            ? {
+                customer_id: String(r.customer_id ?? ''),
+                branch_id: String(r.branch_id ?? ''),
+                subtotal: Number(r.total_amount ?? 0),
+              }
+            : undefined,
       }))
       return [key, options] as const
     }),
