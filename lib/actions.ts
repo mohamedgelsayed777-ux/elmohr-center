@@ -96,6 +96,18 @@ export async function saveRecord(
     payload[field.name] = value
   }
 
+  if (resource.key === 'expenses') {
+    const paymentMethod = String(payload.payment_method ?? '').trim()
+    payload.payment_method =
+      paymentMethod === 'visa'
+        ? 'card'
+        : paymentMethod === 'instapay'
+          ? 'transfer'
+          : paymentMethod === 'wallet'
+            ? 'other'
+            : paymentMethod || null
+  }
+
   if (resource.key === 'parts') {
     // inventory_type is hidden in the warehouse-specific form, so read it explicitly.
     const inventoryType = String(formData.get('inventory_type') ?? '').trim()
