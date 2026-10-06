@@ -61,13 +61,12 @@ export function LoginForm() {
         {loading && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
         تسجيل الدخول
       </Button>
-      <button
-        type="button"
-        onClick={() => router.push('/forgot-password')}
-        className="cursor-pointer text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+      <a
+        href="/forgot-password"
+        className="block cursor-pointer text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
       >
         نسيت كلمة المرور؟
-      </button>
+      </a>
       <p className="text-center text-sm text-muted-foreground">
         موظف جديد؟{' '}
         <Link href="/sign-up" className="font-medium text-primary underline-offset-4 hover:underline">
