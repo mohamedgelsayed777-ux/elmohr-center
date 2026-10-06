@@ -44,6 +44,7 @@ export async function ResourcePage({
   const page = Math.max(1, Number.parseInt(param(searchParams, 'page'), 10) || 1)
   const search = sanitizeSearch(param(searchParams, 'q'))
   const month = param(searchParams, 'month')
+  const period = param(searchParams, 'period') || 'month'
 
   let query = supabase
     .from(resource.table)
@@ -51,11 +52,27 @@ export async function ResourcePage({
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  if (resourceKey === 'work_orders' && /^\\d{4}-\\d{2}$/.test(month)) {
-    const [year, monthNumber] = month.split('-').map(Number)
-    const start = new Date(Date.UTC(year, monthNumber - 1, 1)).toISOString()
-    const end = new Date(Date.UTC(year, monthNumber, 1)).toISOString()
-    query = query.gte('opened_at', start).lt('opened_at', end)
+  if (resourceKey === 'work_orders') {
+    const now = new Date()
+    let start: Date | null = null
+    let end: Date | null = null
+    if (period === 'day') {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    } else if (period === 'week') {
+      const day = now.getDay()
+      const diff = day === 0 ? 6 : day - 1
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff)
+      end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7)
+    } else if (period === 'month') {
+      start = new Date(now.getFullYear(), now.getMonth(), 1)
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    } else if (/^\\d{4}-\\d{2}$/.test(month)) {
+      const [year, monthNumber] = month.split('-').map(Number)
+      start = new Date(year, monthNumber - 1, 1)
+      end = new Date(year, monthNumber, 1)
+    }
+    if (start && end) query = query.gte('opened_at', start.toISOString()).lt('opened_at', end.toISOString())
   }
 
   if (search && resource.searchColumns.length) {
