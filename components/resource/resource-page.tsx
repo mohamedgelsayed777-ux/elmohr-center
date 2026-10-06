@@ -55,7 +55,7 @@ export async function ResourcePage({
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  if (['attendance', 'invoices', 'work_orders'].includes(resourceKey) && (year || month || day)) {
+  if (['attendance', 'invoices', 'work_orders', 'expenses'].includes(resourceKey) && (year || month || day)) {
     const now = new Date()
     const selectedYear = /^\d{4}$/.test(year) ? Number(year) : now.getFullYear()
     const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
@@ -75,9 +75,10 @@ export async function ResourcePage({
       start = new Date(selectedYear, 0, 1)
       end = new Date(selectedYear + 1, 0, 1)
     }
-    const dateColumn = resourceKey === 'attendance' ? 'attendance_date' : resourceKey === 'invoices' ? 'issued_at' : 'opened_at'
-    query = query.gte(dateColumn, resourceKey === 'attendance' ? start.toISOString().slice(0, 10) : start.toISOString())
-      .lt(dateColumn, resourceKey === 'attendance' ? end.toISOString().slice(0, 10) : end.toISOString())
+    const dateColumn = resourceKey === 'attendance' ? 'attendance_date' : resourceKey === 'expenses' ? 'expense_date' : resourceKey === 'invoices' ? 'issued_at' : 'opened_at'
+    const dateOnly = resourceKey === 'attendance' || resourceKey === 'expenses'
+    query = query.gte(dateColumn, dateOnly ? start.toISOString().slice(0, 10) : start.toISOString())
+      .lt(dateColumn, dateOnly ? end.toISOString().slice(0, 10) : end.toISOString())
   }
 
   if (search && resource.searchColumns.length) {
