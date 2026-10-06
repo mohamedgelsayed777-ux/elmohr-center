@@ -134,6 +134,11 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                             : undefined
                     }
                     readOnly={resourceKey === 'invoices' && ['customer_id', 'branch_id', 'subtotal'].includes(field.name)}
+                    onValueChange={
+                      resourceKey === 'invoices' && ['discount', 'tax', 'paid_amount'].includes(field.name)
+                        ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
+                        : undefined
+                    }
                     onSpecialChange={
                       resourceKey === 'cars' && field.name === 'make'
                         ? setSelectedMake
@@ -141,9 +146,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                           ? setSelectedInventoryType
                           : resourceKey === 'invoices' && field.name === 'work_order_id'
                             ? handleInvoiceWorkOrder
-                            : resourceKey === 'invoices' && ['discount', 'tax', 'paid_amount'].includes(field.name)
-                              ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
-                              : undefined
+                            : undefined
                     }
                   />
                 ))}
@@ -188,6 +191,7 @@ function FieldInput({
   options,
   specialOptions,
   onSpecialChange,
+  onValueChange,
   readOnly = false,
 }: {
   field: Field
@@ -195,6 +199,7 @@ function FieldInput({
   options: Option[]
   specialOptions?: Option[]
   onSpecialChange?: (value: string) => void
+  onValueChange?: (value: string) => void
   readOnly?: boolean
 }) {
   const inputId = `field-${field.name}`
@@ -293,6 +298,7 @@ function FieldInput({
         step={field.type === 'number' ? field.step ?? '1' : undefined}
         inputMode={field.type === 'number' ? (field.step ? 'decimal' : 'numeric') : undefined}
         dir={isLtr ? 'ltr' : undefined}
+        onChange={onValueChange ? (e) => onValueChange(e.target.value) : undefined}
         className={cn('h-10', isLtr && 'text-end')}
       />
       {hint}
