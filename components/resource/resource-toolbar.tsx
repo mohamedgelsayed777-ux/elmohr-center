@@ -17,7 +17,7 @@ export function ResourceToolbar({
 }: {
   searchPlaceholder?: string
   filters: ToolbarFilter[]
-  dateFilter?: { enabled: boolean; year?: string; month?: string }
+  dateFilter?: { enabled: boolean; year?: string; month?: string; day?: string }
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -48,7 +48,7 @@ export function ResourceToolbar({
     debounceRef.current = setTimeout(() => updateParams({ q: value.trim() }), 350)
   }
 
-  const hasActive = Boolean(searchParams.get('q')) || filters.some((f) => searchParams.get(f.name)) || Boolean(dateFilter?.year || dateFilter?.month)
+  const hasActive = Boolean(searchParams.get('q')) || filters.some((f) => searchParams.get(f.name)) || Boolean(dateFilter?.year || dateFilter?.month || dateFilter?.day)
 
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-lg border bg-card p-3 md:flex-row md:items-center">
@@ -69,7 +69,7 @@ export function ResourceToolbar({
         </div>
       )}
       {dateFilter?.enabled && (
-        <div className="grid grid-cols-2 gap-2 md:flex md:flex-none">
+        <div className="grid grid-cols-3 gap-2 md:flex md:flex-none">
           <div className="md:w-36">
             <label htmlFor="filter-year" className="sr-only">السنة</label>
             <NativeSelect id="filter-year" value={dateFilter.year ?? ''} onChange={(e) => updateParams({ year: e.target.value })}>
@@ -85,6 +85,18 @@ export function ResourceToolbar({
               <option value="">كل الشهور</option>
               {['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((label, i) => (
                 <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{label}</option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="md:w-28">
+            <label htmlFor="filter-day" className="sr-only">اليوم</label>
+            <NativeSelect id="filter-day" value={dateFilter.day ?? ''} onChange={(e) => updateParams({ day: e.target.value })}>
+              <option value="">كل الأيام</option>
+              {Array.from(
+                { length: dateFilter.year && dateFilter.month ? new Date(Number(dateFilter.year), Number(dateFilter.month), 0).getDate() : 31 },
+                (_, i) => i + 1,
+              ).map((day) => (
+                <option key={day} value={String(day).padStart(2, '0')}>{String(day).padStart(2, '0')}</option>
               ))}
             </NativeSelect>
           </div>
