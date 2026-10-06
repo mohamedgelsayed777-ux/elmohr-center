@@ -12,10 +12,24 @@ export default async function PrintInvoicePage({ params }: { params: Promise<{ i
     .maybeSingle()
   if (!invoice) notFound()
 
-  const { data: items } = await supabase
-    .from('invoice_items')
-    .select('item_type, description, quantity, unit_price, total')
-    .eq('invoice_id', id)
+  const { data: { session } } = await supabase.auth.getSession()
+  let items: Array<{ item_type?: string | null; description?: string | null; quantity?: number | string | null; unit_price?: number | string | null; total?: number | string | null }> = []
 
-  return <PrintInvoice invoice={invoice} items={items ?? []} />
+  if (session?.access_token) {
+    const response = await fetch('https://ymalhqxqvftmhuamxv.supabase.co/functions/v1/invoice-print-details', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ invoice_id: id }),
+      cache: 'no-store',
+    })
+    if (response.ok) {
+      const result = await response.json()
+      items = Array.isArray(result.items) ? result.items : []
+    }
+  }
+
+  return <PrintInvoice invoice={invoice} items={items} />
 }
