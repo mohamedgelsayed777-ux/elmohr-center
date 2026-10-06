@@ -46,7 +46,7 @@ export async function ResourcePage({
   const page = Math.max(1, Number.parseInt(param(searchParams, 'page'), 10) || 1)
   const search = sanitizeSearch(param(searchParams, 'q'))
   const month = param(searchParams, 'month')
-  const period = param(searchParams, 'period') || 'month'
+  const year = param(searchParams, 'year')
 
   let query = supabase
     .from(resource.table)
@@ -54,27 +54,22 @@ export async function ResourcePage({
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  if (resourceKey === 'work_orders') {
+  if (['attendance', 'invoices', 'work_orders'].includes(resourceKey) && (year || month)) {
     const now = new Date()
-    let start: Date | null = null
-    let end: Date | null = null
-    if (period === 'day') {
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    } else if (period === 'week') {
-      const day = now.getDay()
-      const diff = day === 0 ? 6 : day - 1
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff)
-      end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7)
-    } else if (period === 'month') {
-      start = new Date(now.getFullYear(), now.getMonth(), 1)
-      end = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    } else if (/^\\d{4}-\\d{2}$/.test(month)) {
-      const [year, monthNumber] = month.split('-').map(Number)
-      start = new Date(year, monthNumber - 1, 1)
-      end = new Date(year, monthNumber, 1)
+    const selectedYear = /^\\d{4}$/.test(year) ? Number(year) : now.getFullYear()
+    const selectedMonth = /^\\d{2}$/.test(month) ? Number(month) : 0
+    let start: Date
+    let end: Date
+    if (selectedMonth >= 1 && selectedMonth <= 12) {
+      start = new Date(selectedYear, selectedMonth - 1, 1)
+      end = new Date(selectedYear, selectedMonth, 1)
+    } else {
+      start = new Date(selectedYear, 0, 1)
+      end = new Date(selectedYear + 1, 0, 1)
     }
-    if (start && end) query = query.gte('opened_at', start.toISOString()).lt('opened_at', end.toISOString())
+    const dateColumn = resourceKey === 'attendance' ? 'attendance_date' : resourceKey === 'invoices' ? 'issued_at' : 'opened_at'
+    query = query.gte(dateColumn, resourceKey === 'attendance' ? start.toISOString().slice(0, 10) : start.toISOString())
+      .lt(dateColumn, resourceKey === 'attendance' ? end.toISOString().slice(0, 10) : end.toISOString())
   }
 
   if (search && resource.searchColumns.length) {
@@ -147,7 +142,11 @@ export async function ResourcePage({
         }
       />
 
-      <ResourceToolbar searchPlaceholder={resource.searchPlaceholder} filters={toolbarFilters} />
+      <ResourceToolbar
+        searchPlaceholder={resource.searchPlaceholder}
+        filters={toolbarFilters}
+        dateFilter={['attendance', 'invoices', 'work_orders'].includes(resourceKey) ? { enabled: true, year, month } : undefined}
+      />
 
       <p className="mb-3 text-sm text-muted-foreground">
         {`إجمالي السجلات: ${formatNumber(total)}`}
