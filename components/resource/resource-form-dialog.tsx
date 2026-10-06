@@ -291,6 +291,7 @@ function FieldInput({
         id={inputId}
         name={field.name}
         type={field.type}
+        lang={field.type === 'date' ? 'ar-EG' : undefined}
         {...(readOnly ? { value: String(value), readOnly: true } : { defaultValue: String(value) })}
         required={field.required}
         placeholder={field.placeholder}
