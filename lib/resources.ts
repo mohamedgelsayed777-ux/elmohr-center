@@ -11,7 +11,7 @@ import {
 
 export type RelationKey = 'branches' | 'customers' | 'cars' | 'employees' | 'work_orders' | 'vehicle_catalog'
 
-export type Option = { value: string; label: string }
+export type Option = { value: string; label: string; meta?: Record<string, string | number | null> }
 
 export type FieldType =
   | 'text'
