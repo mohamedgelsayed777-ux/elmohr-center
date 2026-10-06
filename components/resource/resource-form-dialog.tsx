@@ -253,18 +253,20 @@ function FieldInput({
     return (
       <div className={wrapper}>
         {label}
-        <NativeSelect id={inputId} name={field.name} defaultValue={String(value)} required={field.required} onChange={onSpecialChange ? (e) => onSpecialChange(e.target.value) : undefined}>
+        <NativeSelect
+          id={inputId}
+          name={field.name}
+          value={String(value)}
+          required={field.required}
+          onChange={onSpecialChange ? (e) => onSpecialChange(e.target.value) : undefined}
+        >
           <option value="">{field.required ? 'اختر...' : 'بدون'}</option>
           {(specialOptions ?? options).map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
+            <option key={o.value} value={o.value}>{o.label}</option>
           ))}
-        {readOnly && <input type="hidden" name={field.name} value={String(value)} />}
         </NativeSelect>
-        {field.type === 'relation' && options.length === 0 && (
-          <p className="text-xs text-muted-foreground">لا توجد سجلات متاحة بعد</p>
-        )}
+        {readOnly && <input type="hidden" name={field.name} value={String(value)} />}
+        {field.type === 'relation' && options.length === 0 && <p className="text-xs text-muted-foreground">لا توجد سجلات متاحة بعد</p>}
         {hint}
       </div>
     )
