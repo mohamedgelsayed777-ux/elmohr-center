@@ -117,6 +117,23 @@ export async function saveRecord(
   }
 
   if (resource.key === 'invoices') {
+    const workOrderId = typeof payload.work_order_id === 'string' ? payload.work_order_id : ''
+    if (workOrderId) {
+      const { data: workOrder, error: workOrderError } = await supabase
+        .from('work_orders')
+        .select('customer_id, branch_id, total_amount')
+        .eq('id', workOrderId)
+        .maybeSingle()
+
+      if (workOrderError || !workOrder) {
+        return { ok: false, error: 'أمر العمل غير موجود أو لا يمكنك الوصول إليه' }
+      }
+
+      payload.customer_id = workOrder.customer_id
+      payload.branch_id = workOrder.branch_id
+      payload.subtotal = Number(workOrder.total_amount ?? 0)
+    }
+
     const subtotal = Number(payload.subtotal ?? 0)
     const discount = Number(payload.discount ?? 0)
     const tax = Number(payload.tax ?? 0)
