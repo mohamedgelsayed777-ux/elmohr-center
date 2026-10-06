@@ -13,9 +13,11 @@ export type ToolbarFilter = { name: string; label: string; options: Option[] }
 export function ResourceToolbar({
   searchPlaceholder,
   filters,
+  dateFilter,
 }: {
   searchPlaceholder?: string
   filters: ToolbarFilter[]
+  dateFilter?: { enabled: boolean; year?: string; month?: string }
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -46,7 +48,7 @@ export function ResourceToolbar({
     debounceRef.current = setTimeout(() => updateParams({ q: value.trim() }), 350)
   }
 
-  const hasActive = Boolean(searchParams.get('q')) || filters.some((f) => searchParams.get(f.name))
+  const hasActive = Boolean(searchParams.get('q')) || filters.some((f) => searchParams.get(f.name)) || Boolean(dateFilter?.year || dateFilter?.month)
 
   return (
     <div className="mb-4 flex flex-col gap-3 rounded-lg border bg-card p-3 md:flex-row md:items-center">
@@ -64,6 +66,28 @@ export function ResourceToolbar({
             placeholder={searchPlaceholder}
             className="h-10 ps-9"
           />
+        </div>
+      )}
+      {dateFilter?.enabled && (
+        <div className="grid grid-cols-2 gap-2 md:flex md:flex-none">
+          <div className="md:w-36">
+            <label htmlFor="filter-year" className="sr-only">السنة</label>
+            <NativeSelect id="filter-year" value={dateFilter.year ?? ''} onChange={(e) => updateParams({ year: e.target.value })}>
+              <option value="">كل السنوات</option>
+              {Array.from({ length: 8 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                <option key={year} value={String(year)}>{year}</option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="md:w-36">
+            <label htmlFor="filter-month" className="sr-only">الشهر</label>
+            <NativeSelect id="filter-month" value={dateFilter.month ?? ''} onChange={(e) => updateParams({ month: e.target.value })}>
+              <option value="">كل الشهور</option>
+              {['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((label, i) => (
+                <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{label}</option>
+              ))}
+            </NativeSelect>
+          </div>
         </div>
       )}
       {filters.length > 0 && (
