@@ -114,7 +114,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     searchPlaceholder: 'ابحث بالاسم أو رقم الجوال...',
     filters: [branchFilter],
     fields: [
-      { name: 'customer_number', label: 'رقم العميل', type: 'text', readOnly: true },
       { name: 'full_name', label: 'الاسم الكامل', type: 'text', required: true },
       { name: 'phone', label: 'رقم الجوال', type: 'tel', required: true, placeholder: '05xxxxxxxx' },
       { name: 'email', label: 'البريد الإلكتروني', type: 'email' },
@@ -145,7 +144,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     searchPlaceholder: 'ابحث برقم اللوحة أو الماركة أو رقم الهيكل...',
     filters: [{ name: 'customer_id', label: 'العميل', relation: 'customers' }],
     fields: [
-      { name: 'car_number', label: 'رقم السيارة', type: 'text', readOnly: true },
       { name: 'customer_id', label: 'المالك (العميل)', type: 'relation', relation: 'customers', required: true, fullWidth: true },
       { name: 'make', label: 'الشركة المصنعة', type: 'text', required: true, placeholder: 'اختر الشركة المصنعة' },
       { name: 'model', label: 'الطراز', type: 'text', required: true, placeholder: 'اختر الطراز' },
@@ -289,7 +287,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       ] },
     ],
     fields: [
-      { name: 'part_number', label: 'رقم الصنف', type: 'text', readOnly: true },
       { name: 'inventory_type', label: 'نوع المخزون', type: 'select', required: true, options: [
         { value: 'part', label: 'قطعة غيار' },
         { value: 'filter', label: 'فلتر' },
@@ -432,7 +429,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       branchFilter,
     ],
     fields: [
-      { name: 'expense_number', label: 'رقم المصروف', type: 'text', readOnly: true },
       { name: 'category', label: 'البند', type: 'select', required: true, options: EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c })) },
       { name: 'amount', label: 'المبلغ', type: 'number', min: 0, step: '0.01', required: true },
       { name: 'expense_date', label: 'التاريخ', type: 'date', required: true },
@@ -468,7 +464,6 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'employee_id', label: 'الموظف', relation: 'employees' },
     ],
     fields: [
-      { name: 'attendance_number', label: 'رقم الحضور', type: 'text', readOnly: true },
       { name: 'employee_id', label: 'الموظف', type: 'relation', relation: 'employees', required: true },
       { name: 'attendance_date', label: 'التاريخ', type: 'date', required: true },
       { name: 'check_in', label: 'وقت الحضور', type: 'time' },
