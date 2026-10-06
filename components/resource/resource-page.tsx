@@ -47,6 +47,7 @@ export async function ResourcePage({
   const search = sanitizeSearch(param(searchParams, 'q'))
   const month = param(searchParams, 'month')
   const year = param(searchParams, 'year')
+  const day = param(searchParams, 'day')
 
   let query = supabase
     .from(resource.table)
@@ -54,7 +55,7 @@ export async function ResourcePage({
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  if (['attendance', 'invoices', 'work_orders'].includes(resourceKey) && (year || month)) {
+  if (['attendance', 'invoices', 'work_orders'].includes(resourceKey) && (year || month || day)) {
     const now = new Date()
     const selectedYear = /^\d{4}$/.test(year) ? Number(year) : now.getFullYear()
     const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
@@ -145,7 +146,7 @@ export async function ResourcePage({
       <ResourceToolbar
         searchPlaceholder={resource.searchPlaceholder}
         filters={toolbarFilters}
-        dateFilter={['attendance', 'invoices', 'work_orders'].includes(resourceKey) ? { enabled: true, year, month } : undefined}
+        dateFilter={['attendance', 'invoices', 'work_orders'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
       />
 
       <p className="mb-3 text-sm text-muted-foreground">
