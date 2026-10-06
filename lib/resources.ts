@@ -262,7 +262,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     title: 'قطع الغيار',
     singular: 'قطعة غيار',
     description: 'مخزون قطع الغيار والفلاتر والزيوت والكميات والأسعار',
-    select: 'id, name, sku, brand, inventory_type, category, quantity, min_quantity, cost_price, sale_price, branch_id, created_at, branch:branches(name)',
+    select: 'id, part_number, name, sku, brand, inventory_type, category, quantity, min_quantity, cost_price, sale_price, branch_id, created_at, branch:branches(name)',
     orderBy: { column: 'name', ascending: true },
     searchColumns: ['name', 'sku', 'brand'],
     searchPlaceholder: 'ابحث باسم القطعة أو الرمز...',
@@ -285,6 +285,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       ] },
     ],
     fields: [
+      { name: 'part_number', label: 'رقم الصنف', type: 'text', readOnly: true },
       { name: 'inventory_type', label: 'نوع المخزون', type: 'select', required: true, options: [
         { value: 'part', label: 'قطعة غيار' },
         { value: 'filter', label: 'فلتر' },
@@ -307,7 +308,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       branchField,
     ],
     columns: [
-      { key: 'name', label: 'الصنف', primary: true },
+      { key: 'part_number', label: 'رقم الصنف', format: 'code', primary: true, prefix: 'SP-' },
+      { key: 'name', label: 'الصنف' },
       { key: 'category', label: 'التصنيف', secondary: true },
       { key: 'inventory_type', label: 'النوع', format: 'badge' },
       { key: 'sku', label: 'الرمز', format: 'code' },
