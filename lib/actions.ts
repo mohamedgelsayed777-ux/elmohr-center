@@ -88,6 +88,7 @@ export async function saveRecord(
   const supabase = await requireUser()
   let returnValue: string | undefined
   const payload: Record<string, unknown> = {}
+  let sourceInvoiceItems: Array<Record<string, unknown>> = []
 
   for (const field of resource.fields) {
     if (field.readOnly) continue
@@ -130,7 +131,6 @@ export async function saveRecord(
 
   if (resource.key === 'invoices') {
     const workOrderId = typeof payload.work_order_id === 'string' ? payload.work_order_id : ''
-    let sourceInvoiceItems: Array<Record<string, unknown>> = []
     if (workOrderId) {
       const { data: workOrder, error: workOrderError } = await supabase
         .from('work_orders')
