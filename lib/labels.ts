@@ -26,10 +26,10 @@ export const INVOICE_STATUS: LabelMap = {
 }
 
 export const PAYMENT_METHOD: LabelMap = {
-  cash: { label: 'نقداً', tone: 'neutral' },
-  card: { label: 'بطاقة', tone: 'neutral' },
-  transfer: { label: 'تحويل بنكي', tone: 'neutral' },
-  other: { label: 'أخرى', tone: 'neutral' },
+  cash: { label: 'نقدي', tone: 'neutral' },
+  instapay: { label: 'إنستاباي', tone: 'neutral' },
+  wallet: { label: 'محفظة', tone: 'neutral' },
+  visa: { label: 'فيزا', tone: 'neutral' },
 }
 
 export const EMPLOYEE_STATUS: LabelMap = {
