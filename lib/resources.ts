@@ -384,7 +384,17 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     ],
     fields: [
       { name: 'full_name', label: 'الاسم الكامل', type: 'text', required: true },
-      { name: 'job_title', label: 'المسمى الوظيفي', type: 'text', required: true, placeholder: 'فني ميكانيكا' },
+      { name: 'job_title', label: 'المسمى الوظيفي', type: 'select', required: true, options: [
+        { value: 'محاسب', label: 'محاسب' },
+        { value: 'استقبال', label: 'استقبال' },
+        { value: 'امين مخازن', label: 'امين مخازن' },
+        { value: 'فني ميكانيكي', label: 'فني ميكانيكي' },
+        { value: 'فني كهربائي', label: 'فني كهربائي' },
+        { value: 'فني عفشه', label: 'فني عفشه' },
+        { value: 'فني سمكري', label: 'فني سمكري' },
+        { value: 'مساعد', label: 'مساعد' },
+        { value: 'فني دوكو', label: 'فني دوكو' },
+      ] },
       { name: 'phone', label: 'رقم الجوال', type: 'tel' },
       branchField,
       { name: 'salary', label: 'الراتب الشهري', type: 'number', min: 0, step: '0.01' },
