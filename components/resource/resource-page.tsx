@@ -59,9 +59,16 @@ export async function ResourcePage({
     const now = new Date()
     const selectedYear = /^\d{4}$/.test(year) ? Number(year) : now.getFullYear()
     const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
+    const selectedDay = /^\d{2}$/.test(day) ? Number(day) : 0
+    const daysInSelectedMonth = selectedMonth >= 1 && selectedMonth <= 12
+      ? new Date(selectedYear, selectedMonth, 0).getDate()
+      : 0
     let start: Date
     let end: Date
-    if (selectedMonth >= 1 && selectedMonth <= 12) {
+    if (selectedMonth >= 1 && selectedMonth <= 12 && selectedDay >= 1 && selectedDay <= daysInSelectedMonth) {
+      start = new Date(selectedYear, selectedMonth - 1, selectedDay)
+      end = new Date(selectedYear, selectedMonth - 1, selectedDay + 1)
+    } else if (selectedMonth >= 1 && selectedMonth <= 12) {
       start = new Date(selectedYear, selectedMonth - 1, 1)
       end = new Date(selectedYear, selectedMonth, 1)
     } else {
