@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { CENTER_LOGO_DATA_URI } from '@/lib/center-logo'
 
 export function PrintInvoice({ invoice, items }: { invoice: any; items: any[] }) {
   useEffect(() => {
@@ -16,10 +17,13 @@ export function PrintInvoice({ invoice, items }: { invoice: any; items: any[] })
   return (
     <main dir="rtl" className="mx-auto min-h-screen max-w-3xl bg-white p-6 text-black print:max-w-none print:p-0">
       <div className="mb-6 flex items-start justify-between border-b-2 pb-4">
-        <div>
+        <div className="flex items-start gap-4">
+          <img src={CENTER_LOGO_DATA_URI} alt="مركز المهر" className="h-24 w-24 object-contain" />
+          <div>
           <h1 className="text-2xl font-bold">مركز المهر</h1>
           <p className="text-sm">ELMOHR CENTER</p>
           <p className="mt-1 text-sm">كل ما يخص عالم السيارات</p>
+          </div>
         </div>
         <div className="text-left text-sm">
           <div className="text-xl font-bold">فاتورة #{invoice.invoice_number}</div>
