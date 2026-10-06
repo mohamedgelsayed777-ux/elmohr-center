@@ -49,6 +49,9 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
     customer_id: String(record?.customer_id ?? ''),
     branch_id: String(record?.branch_id ?? ''),
     subtotal: String(record?.subtotal ?? 0),
+    discount: String(record?.discount ?? 0),
+    tax: String(record?.tax ?? 0),
+    paid_amount: String(record?.paid_amount ?? 0),
   })
   const catalog = relationOptions.vehicle_catalog ?? []
   const makes = useMemo(() => Array.from(new Set(catalog.map((o) => o.value.split('|||')[0]))).filter(Boolean), [catalog])
@@ -68,6 +71,13 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   const invoiceFieldValue = (field: Field) => resourceKey === 'invoices' && field.name in invoiceValues
     ? invoiceValues[field.name as keyof typeof invoiceValues]
     : initialValue(field, record)
+
+  const invoiceTotal = Math.max(0, Number(invoiceValues.subtotal || 0) - Number(invoiceValues.discount || 0) + Number(invoiceValues.tax || 0))
+  const invoiceRemaining = Math.max(0, invoiceTotal - Number(invoiceValues.paid_amount || 0))
+
+  const handleInvoiceValue = (fieldName: 'discount' | 'tax' | 'paid_amount', value: string) => {
+    setInvoiceValues((current) => ({ ...current, [fieldName]: value }))
+  }
 
   const handleInvoiceWorkOrder = (value: string) => {
     const option = (relationOptions.work_orders ?? []).find((o) => o.value === value)
@@ -131,11 +141,25 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                           ? setSelectedInventoryType
                           : resourceKey === 'invoices' && field.name === 'work_order_id'
                             ? handleInvoiceWorkOrder
-                            : undefined
+                            : resourceKey === 'invoices' && ['discount', 'tax', 'paid_amount'].includes(field.name)
+                              ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
+                              : undefined
                     }
                   />
                 ))}
               </div>
+              {resourceKey === 'invoices' && (
+                <div className="rounded-lg border bg-muted/40 p-4 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-4 text-sm">
+                    <span>إجمالي الفاتورة</span>
+                    <strong>{invoiceTotal.toFixed(2)} جنيه</strong>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-4 text-sm">
+                    <span>المبلغ المطلوب دفعه</span>
+                    <strong className="text-lg">{invoiceRemaining.toFixed(2)} جنيه</strong>
+                  </div>
+                </div>
+              )}
               {state.error && !state.ok && (
                 <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {state.error}
