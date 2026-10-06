@@ -56,8 +56,8 @@ export async function ResourcePage({
 
   if (['attendance', 'invoices', 'work_orders'].includes(resourceKey) && (year || month)) {
     const now = new Date()
-    const selectedYear = /^\\d{4}$/.test(year) ? Number(year) : now.getFullYear()
-    const selectedMonth = /^\\d{2}$/.test(month) ? Number(month) : 0
+    const selectedYear = /^\d{4}$/.test(year) ? Number(year) : now.getFullYear()
+    const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
     let start: Date
     let end: Date
     if (selectedMonth >= 1 && selectedMonth <= 12) {
