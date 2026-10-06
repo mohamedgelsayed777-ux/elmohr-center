@@ -154,7 +154,7 @@ export async function ResourcePage({
       <ResourceToolbar
         searchPlaceholder={resource.searchPlaceholder}
         filters={toolbarFilters}
-        dateFilter={['attendance', 'invoices', 'work_orders'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
+        dateFilter={['attendance', 'invoices', 'work_orders', 'expenses'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
       />
 
       <p className="mb-3 text-sm text-muted-foreground">
