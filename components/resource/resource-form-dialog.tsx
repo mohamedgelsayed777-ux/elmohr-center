@@ -43,6 +43,7 @@ function initialValue(field: Field, record?: Record<string, unknown>) {
 export function ResourceFormDialog({ resourceKey, singular, fields, relationOptions, record, inventoryType }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
+  const [selectedModel, setSelectedModel] = useState(String(record?.model ?? ''))
   const [selectedInventoryType, setSelectedInventoryType] = useState(String(inventoryType ?? record?.inventory_type ?? 'part'))
   const [invoiceValues, setInvoiceValues] = useState({
     work_order_id: String(record?.work_order_id ?? ''),
@@ -59,6 +60,13 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   const id = (record?.id as string | undefined) ?? null
   const isEdit = Boolean(id)
   const [state, formAction, isPending] = useActionState(saveRecord.bind(null, resourceKey, id), initialState)
+
+  useEffect(() => {
+    if (open) {
+      setSelectedMake(String(record?.make ?? ''))
+      setSelectedModel(String(record?.model ?? ''))
+    }
+  }, [open, record])
 
   useEffect(() => {
     if (state.ok && state.at) {
@@ -117,7 +125,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                   <FieldInput
                     key={`${field.name}-${resourceKey === 'parts' && field.name === 'category' ? selectedInventoryType : ''}`}
                     field={field}
-                    value={invoiceFieldValue(field)}
+                    value={resourceKey === 'cars' && field.name === 'model' ? selectedModel : invoiceFieldValue(field)}
                     options={field.relation ? relationOptions[field.relation] ?? [] : field.options ?? []}
                     specialOptions={
                       resourceKey === 'cars' && field.name === 'make'
@@ -141,8 +149,10 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                     }
                     onSpecialChange={
                       resourceKey === 'cars' && field.name === 'make'
-                        ? setSelectedMake
-                        : resourceKey === 'parts' && field.name === 'inventory_type'
+                        ? (value) => { setSelectedMake(value); setSelectedModel('') }
+                        : resourceKey === 'cars' && field.name === 'model'
+                          ? setSelectedModel
+                          : resourceKey === 'parts' && field.name === 'inventory_type'
                           ? setSelectedInventoryType
                           : resourceKey === 'invoices' && field.name === 'work_order_id'
                             ? handleInvoiceWorkOrder
