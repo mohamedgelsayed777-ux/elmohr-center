@@ -125,7 +125,13 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                   <FieldInput
                     key={`${field.name}-${resourceKey === 'parts' && field.name === 'category' ? selectedInventoryType : ''}`}
                     field={field}
-                    value={resourceKey === 'cars' && field.name === 'model' ? selectedModel : invoiceFieldValue(field)}
+                    value={
+                      resourceKey === 'cars' && field.name === 'make'
+                        ? selectedMake
+                        : resourceKey === 'cars' && field.name === 'model'
+                          ? selectedModel
+                          : invoiceFieldValue(field)
+                    }
                     options={field.relation ? relationOptions[field.relation] ?? [] : field.options ?? []}
                     specialOptions={
                       resourceKey === 'cars' && field.name === 'make'
