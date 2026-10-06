@@ -118,6 +118,7 @@ export async function saveRecord(
 
   if (resource.key === 'invoices') {
     const workOrderId = typeof payload.work_order_id === 'string' ? payload.work_order_id : ''
+    let sourceInvoiceItems: Array<Record<string, unknown>> = []
     if (workOrderId) {
       const { data: workOrder, error: workOrderError } = await supabase
         .from('work_orders')
@@ -132,6 +133,24 @@ export async function saveRecord(
       payload.customer_id = workOrder.customer_id
       payload.branch_id = workOrder.branch_id
       payload.subtotal = Number(workOrder.total_amount ?? 0)
+
+      if (!id) {
+        const { data: sourceInvoice } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('work_order_id', workOrderId)
+          .order('issued_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+
+        if (sourceInvoice?.id) {
+          const { data: sourceItems } = await supabase
+            .from('invoice_items')
+            .select('item_type, part_id, description, quantity, unit_price, total')
+            .eq('invoice_id', sourceInvoice.id)
+          sourceInvoiceItems = (sourceItems ?? []) as Array<Record<string, unknown>>
+        }
+      }
     }
 
     const subtotal = Number(payload.subtotal ?? 0)
@@ -179,6 +198,20 @@ export async function saveRecord(
       const { data: inserted, error } = await supabase.from(resource.table).insert(payload).select('id').single()
       if (error) return { ok: false, error: friendlyDbError(error.code) }
       returnValue = inserted.id
+
+      if (resource.key === 'invoices' && sourceInvoiceItems.length && returnValue) {
+        const items = sourceInvoiceItems.map((item) => ({
+          invoice_id: returnValue,
+          item_type: item.item_type,
+          part_id: item.part_id ?? null,
+          description: item.description,
+          quantity: Number(item.quantity ?? 0),
+          unit_price: Number(item.unit_price ?? 0),
+          total: Number(item.total ?? 0),
+        }))
+        const { error: itemsError } = await supabase.from('invoice_items').insert(items)
+        if (itemsError) return { ok: false, error: friendlyDbError(itemsError.code) }
+      }
     }
   }
 
