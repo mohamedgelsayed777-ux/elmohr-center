@@ -419,7 +419,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     title: 'المصروفات',
     singular: 'مصروف',
     description: 'تسجيل ومتابعة مصروفات الفروع',
-    select: 'id, branch_id, category, description, amount, expense_date, payment_method, created_at, branch:branches(name)',
+    select: 'id, expense_number, branch_id, category, description, amount, expense_date, payment_method, created_at, branch:branches(name)',
     orderBy: { column: 'expense_date', ascending: false },
     searchColumns: ['description', 'category'],
     searchPlaceholder: 'ابحث في الوصف أو البند...',
@@ -428,6 +428,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       branchFilter,
     ],
     fields: [
+      { name: 'expense_number', label: 'رقم المصروف', type: 'text', readOnly: true },
       { name: 'category', label: 'البند', type: 'select', required: true, options: EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c })) },
       { name: 'amount', label: 'المبلغ', type: 'number', min: 0, step: '0.01', required: true },
       { name: 'expense_date', label: 'التاريخ', type: 'date', required: true },
@@ -436,7 +437,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'description', label: 'الوصف', type: 'textarea', fullWidth: true },
     ],
     columns: [
-      { key: 'category', label: 'البند', primary: true },
+      { key: 'expense_number', label: 'رقم المصروف', format: 'code', primary: true, prefix: 'EXP-' },
+      { key: 'category', label: 'البند' },
       { key: 'description', label: 'الوصف', secondary: true, hideOnMobile: true },
       { key: 'amount', label: 'المبلغ', format: 'currency' },
       { key: 'expense_date', label: 'التاريخ', format: 'date' },
