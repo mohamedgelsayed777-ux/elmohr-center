@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   if (user && !isPublic) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
     const role = profile?.role ?? 'reception'
-    const managerOnly = ['/branches', '/employees', '/attendance', '/employees']
+    const managerOnly = ['/branches', '/employees', '/attendance', '/employees', '/audit-logs']
     const financeOnly = ['/invoices', '/expenses', '/reports']
     const accountantAllowed = ['/', ...financeOnly, '/parts', '/services', '/attendance', '/employees']
     const receptionBlocked = ['/parts', '/services', ...financeOnly, ...managerOnly]
