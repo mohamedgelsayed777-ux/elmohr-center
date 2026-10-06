@@ -262,9 +262,8 @@ function FieldInput({
         id={inputId}
         name={field.name}
         type={field.type}
-        value={String(value)}
+        {...(readOnly ? { value: String(value), readOnly: true } : { defaultValue: String(value) })}
         required={field.required}
-        readOnly={readOnly}
         placeholder={field.placeholder}
         min={field.min}
         step={field.type === 'number' ? field.step ?? '1' : undefined}
