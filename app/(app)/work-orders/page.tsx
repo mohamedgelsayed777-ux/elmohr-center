@@ -10,6 +10,7 @@ export default async function Page({ searchParams }: PageProps<'/work-orders'>) 
   const supabase = await createClient()
   const sp = await searchParams
   const selectedMonth = typeof sp.month === 'string' ? sp.month : ''
+  const selectedPeriod = typeof sp.period === 'string' ? sp.period : 'month'
   const [{ data: branches }, { data: employees }, { data: customers }, { data: cars }, { data: stock }] = await Promise.all([
     supabase.from('branches').select('id,name').eq('is_active', true).order('name'),
     supabase.from('employees').select('id,full_name').eq('status', 'active').order('full_name'),
@@ -29,9 +30,15 @@ export default async function Page({ searchParams }: PageProps<'/work-orders'>) 
       searchParams={await searchParams}
       headerActions={
         <div className="flex flex-wrap items-center gap-2">
-          <form method="get" className="flex items-center gap-2">
+          <form method="get" className="flex flex-wrap items-center gap-2">
+            <select name="period" defaultValue={selectedPeriod} className="h-10 rounded-md border bg-background px-3 text-sm">
+              <option value="day">اليوم</option>
+              <option value="week">هذا الأسبوع</option>
+              <option value="month">هذا الشهر</option>
+              <option value="all">كل الأوامر</option>
+            </select>
             <select name="month" defaultValue={selectedMonth} className="h-10 rounded-md border bg-background px-3 text-sm">
-              <option value="">كل الشهور</option>
+              <option value="">شهر محدد</option>
               {months.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
             <button type="submit" className="h-10 rounded-md border px-3 text-sm">عرض</button>
