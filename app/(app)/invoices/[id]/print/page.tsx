@@ -16,7 +16,7 @@ export default async function PrintInvoicePage({ params }: { params: Promise<{ i
   let items: Array<{ item_type?: string | null; description?: string | null; quantity?: number | string | null; unit_price?: number | string | null; total?: number | string | null }> = []
 
   if (session?.access_token) {
-    const response = await fetch('https://ymalhqxqvftmhuamxv.supabase.co/functions/v1/invoice-print-details', {
+    const response = await fetch('https://ymalhqxqvftmhujuamxv.supabase.co/functions/v1/invoice-print-details', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${session.access_token}`,
