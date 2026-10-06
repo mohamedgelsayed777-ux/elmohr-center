@@ -262,7 +262,7 @@ function FieldInput({
         <NativeSelect
           id={inputId}
           name={field.name}
-          value={String(value)}
+          defaultValue={String(value)}
           required={field.required}
           onChange={onSpecialChange ? (e) => onSpecialChange(e.target.value) : undefined}
         >
