@@ -38,7 +38,7 @@ export async function ResourcePage({
   const resource = RESOURCES[resourceKey]
   const supabase = await createClient()
   const { data: roleData } = await supabase.rpc('current_user_role')
-  const accountantAddOnly = roleData === 'accountant' && ['attendance', 'services', 'parts', 'employees'].includes(resourceKey)
+  const accountantAddOnly = roleData === 'accountant' && ['attendance', 'services', 'parts'].includes(resourceKey)
   const relationOptions = await loadRelationOptions(resource)
   const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
   const inventoryTitle = resourceKey === 'parts' && inventoryType === 'part' ? 'مخزن قطع الغيار' : resourceKey === 'parts' && inventoryType === 'filter' ? 'مخزن الفلاتر' : resourceKey === 'parts' && inventoryType === 'oil' ? 'مخزن الزيوت' : resource.title
