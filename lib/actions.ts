@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getResource, type Field } from '@/lib/resources'
 
-export type ActionState = { ok: boolean; error?: string; at?: number }
+export type ActionState = { ok: boolean; error?: string; at?: number; recordId?: string }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -86,6 +86,7 @@ export async function saveRecord(
   if (id && !UUID_RE.test(id)) return { ok: false, error: 'معرف السجل غير صحيح' }
 
   const supabase = await requireUser()
+  let returnValue: string | undefined
   const payload: Record<string, unknown> = {}
 
   for (const field of resource.fields) {
@@ -154,15 +155,19 @@ export async function saveRecord(
     const { error } = await supabase.rpc('save_inventory_part', { p_payload: payload, p_id: id })
     if (error) return { ok: false, error: friendlyDbError(error.code) }
   } else {
-    const { error } = id
-      ? await supabase.from(resource.table).update(payload).eq('id', id)
-      : await supabase.from(resource.table).insert(payload)
-    if (error) return { ok: false, error: friendlyDbError(error.code) }
+    if (id) {
+      const { error } = await supabase.from(resource.table).update(payload).eq('id', id)
+      if (error) return { ok: false, error: friendlyDbError(error.code) }
+    } else {
+      const { data: inserted, error } = await supabase.from(resource.table).insert(payload).select('id').single()
+      if (error) return { ok: false, error: friendlyDbError(error.code) }
+      returnValue = inserted.id
+    }
   }
 
   revalidatePath(resource.path)
   revalidatePath('/')
-  return { ok: true, at: Date.now() }
+  return { ok: true, at: Date.now(), recordId: id ?? returnValue }
 }
 
 export async function deleteRecord(resourceKey: string, id: string): Promise<ActionState> {
