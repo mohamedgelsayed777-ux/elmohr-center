@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useMemo, useState } from 'react'
-import { Loader2, Pencil, Plus } from 'lucide-react'
+import { Loader2, Pencil, Plus, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -19,6 +19,7 @@ import { saveRecord, type ActionState } from '@/lib/actions'
 import type { Field, Option, RelationKey } from '@/lib/resources'
 import { cn } from '@/lib/utils'
 import { NativeSelect } from './native-select'
+import Link from 'next/link'
 
 type Props = {
   resourceKey: string
@@ -54,6 +55,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
     if (state.ok && state.at) {
       setOpen(false)
       toast.success(isEdit ? 'تم حفظ التعديلات' : `تمت إضافة ${singular} بنجاح`)
+      if (resourceKey === 'invoices' && !isEdit && state.recordId) window.open(`/invoices/${state.recordId}/print`, '_blank')
     }
   }, [state, isEdit, singular])
 
