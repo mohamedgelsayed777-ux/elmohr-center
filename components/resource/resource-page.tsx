@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Inbox } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Inbox, Printer } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { loadRelationOptions } from '@/lib/relations'
 import { RESOURCES, type ResourceKey } from '@/lib/resources'
@@ -165,6 +165,7 @@ export async function ResourcePage({
                     )}
                   </div>
                   <div className="flex shrink-0 items-center">
+                    {resourceKey === 'invoices' && <Link href={\`/invoices/\${String(row.id)}/print\`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
                     <ResourceFormDialog
                       resourceKey={resource.key}
                       singular={resource.singular}
@@ -230,6 +231,7 @@ export async function ResourcePage({
                     ))}
                     <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-1">
+                        {resourceKey === 'invoices' && <Link href={\`/invoices/\${String(row.id)}/print\`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
                         <ResourceFormDialog
                           resourceKey={resource.key}
                           singular={resource.singular}
