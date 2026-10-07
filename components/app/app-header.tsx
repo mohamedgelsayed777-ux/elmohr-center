@@ -13,7 +13,7 @@ export function AppHeader({ name, email, role }: { name: string; email: string; 
       <MobileMenuButton role={role} />
       <Brand className="lg:hidden" />
       <div className="ms-auto flex items-center gap-3"><Link href="/search" aria-label="البحث الشامل" className="flex h-10 items-center gap-2 rounded-lg border bg-background px-3 text-sm text-muted-foreground hover:bg-muted"><Search className="size-4" /><span className="hidden sm:inline">بحث شامل...</span></Link>
-        <div className="hidden text-end sm:block">
+        <Link href="/profile" className="hidden text-end sm:block hover:opacity-80">
           <p className="text-sm font-medium leading-tight">{name}</p>
           <p className="text-xs text-muted-foreground">{role === 'manager' ? 'مدير المركز' : role === 'accountant' ? 'محاسب' : 'مهندس استقبال'}</p><p className="text-xs text-muted-foreground" dir="ltr">{email}</p>
         </div>
