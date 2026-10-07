@@ -46,6 +46,7 @@ export default function DeletedRecordsPage(){
  const year=searchParams.get('year')??'';const month=searchParams.get('month')??'';const day=searchParams.get('day')??''
  useEffect(()=>{(async()=>{
   setLoading(true);setError('')
+  try{
   const supabase=createClient()
   const{data,error}=await supabase.from('audit_logs').select('id,log_number,user_id,action,table_name,record_id,old_data,occurred_at').eq('action','DELETE').order('occurred_at',{ascending:false}).limit(500)
   if(error){setError(error.message);setLoading(false);return}
