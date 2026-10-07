@@ -16,7 +16,7 @@ export default async function Page({ searchParams }: PageProps<'/work-orders'>) 
     supabase.from('employees').select('id,full_name').eq('status', 'active').order('full_name'),
     supabase.from('customers').select('id,full_name,phone,branch_id').order('full_name').limit(1000),
     supabase.from('cars').select('id,customer_id,make,model,year,plate_number,vin,color,mileage').order('created_at', { ascending: false }).limit(2000),
-    supabase.from('parts').select('id,name,quantity,sale_price,inventory_type,branch_id').gte('quantity', 0).order('name'),
+    supabase.from('parts').select('id,name,sku,part_number,quantity,sale_price,inventory_type,branch_id').gte('quantity', 0).order('name'),
     supabase.from('services').select('id,name,price,category').eq('is_active', true).order('name'),
   ])
   const now = new Date()
