@@ -16,13 +16,11 @@ export function AppHeader({ name, email, role }: { name: string; email: string; 
         <Link href="/profile" className="hidden text-end sm:block hover:opacity-80">
           <p className="text-sm font-medium leading-tight">{name}</p>
           <p className="text-xs text-muted-foreground">{role === 'manager' ? 'مدير المركز' : role === 'accountant' ? 'محاسب' : 'مهندس استقبال'}</p><p className="text-xs text-muted-foreground" dir="ltr">{email}</p>
-        </div>
-        <div
-          className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
-          aria-hidden="true"
-        >
+        </Link>
+        <Link href="/profile" aria-label="البروفايل" className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:opacity-80">
+           items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
           {initial}
-        </div>
+        </Link>
         <form action={signOut}>
           <Button type="submit" variant="ghost" size="icon" aria-label="تسجيل الخروج">
             <LogOut className="size-4.5 rtl:-scale-x-100" />
