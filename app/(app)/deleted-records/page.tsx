@@ -28,7 +28,7 @@ const formatValue=(key:string,value:unknown,lookups:Record<string,string>)=>{
 const titleFor=(row:DeletedRow)=>{
  const d=row.old_data??{}
  if(row.table_name==='work_orders') return `أمر عمل #${d.order_number??row.record_id}`
- if(row.table_name==='invoices') return `فاتورة #${d.invoice_number??row.record_id} — أمر عمل #${d.work_order_id?String(d.work_order_id).slice(0,8):'—'}`
+ if(row.table_name==='invoices') return `فاتورة #${d.invoice_number??row.record_id}`
  if(row.table_name==='services') return `خدمة: ${d.name??row.record_id}`
  if(row.table_name==='parts') return `صنف: ${d.name??row.record_id}`
  if(row.table_name==='customers') return `عميل: ${d.name??row.record_id}`
