@@ -16,17 +16,19 @@ type Option={value:string;label:string}
 type Customer={value:string;label:string;phone:string;branch_id:string|null}
 type Car={id:string;customer_id:string;make:string;model:string;year:number|null;plate_number:string;vin:string;color:string;mileage:number|null}
 type Stock={id:string;name:string;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil';branch_id:string|null}
-type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[];stock:Stock[]}
+type Service={id:string;name:string;price:number;category:string|null}
+type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[];stock:Stock[];services:Service[]}
 
 const initialState:ActionState={ok:false}
 
-export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Props){
+export function WorkOrderFormDialog({branches,employees,customers,cars,stock,services}:Props){
  const [open,setOpen]=useState(false)
  const [state,formAction,pending]=useActionState(saveWorkOrderIntake,initialState)
  const [customerId,setCustomerId]=useState('')
  const [carId,setCarId]=useState('')
  const [branchId,setBranchId]=useState(branches[0]?.value || '')
  const [items,setItems]=useState<{part_id:string;quantity:number}[]>([])
+ const [serviceItems,setServiceItems]=useState<{service_id:string;quantity:number}[]>([])
  const selectedCustomer=customers.find(c=>c.value===customerId)
  const customerCars=useMemo(()=>cars.filter(c=>c.customer_id===customerId),[cars,customerId])
  const selectedCar=customerCars.find(c=>c.id===carId)
@@ -35,13 +37,17 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
  const filters=branchStock.filter(s=>s.inventory_type==='filter')
  const oils=branchStock.filter(s=>s.inventory_type==='oil')
  const partsTotal=useMemo(()=>items.reduce((sum,item)=>sum+(Number(branchStock.find(s=>s.id===item.part_id)?.sale_price??0)*item.quantity),0),[items,branchStock])
+ const servicesTotal=useMemo(()=>serviceItems.reduce((sum,item)=>sum+(Number(services.find(s=>s.id===item.service_id)?.price??0)*item.quantity),0),[serviceItems,services])
  const [laborAmount,setLaborAmount]=useState(0)
  const [amountPaid,setAmountPaid]=useState(0)
- const totalAmount=useMemo(()=>Math.round((partsTotal+laborAmount)*100)/100,[partsTotal,laborAmount])
+ const totalAmount=useMemo(()=>Math.round((partsTotal+servicesTotal+laborAmount)*100)/100,[partsTotal,servicesTotal,laborAmount])
  const remainingAmount=Math.max(0,Math.round((totalAmount-amountPaid)*100)/100)
  const addItem=(id:string)=>{if(!id)return;setItems(x=>x.some(i=>i.part_id===id)?x:x.concat({part_id:id,quantity:1}))}
  const updateQty=(id:string,q:number)=>setItems(x=>q<=0?x.filter(i=>i.part_id!==id):x.map(i=>i.part_id===id?{...i,quantity:q}:i))
  const removeItem=(id:string)=>setItems(x=>x.filter(i=>i.part_id!==id))
+ const addService=(id:string)=>{if(!id)return;setServiceItems(x=>x.some(i=>i.service_id===id)?x:x.concat({service_id:id,quantity:1}))}
+ const updateServiceQty=(id:string,q:number)=>setServiceItems(x=>q<=0?x.filter(i=>i.service_id!==id):x.map(i=>i.service_id===id?{...i,quantity:q}:i))
+ const removeService=(id:string)=>setServiceItems(x=>x.filter(i=>i.service_id!==id))
  useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
  return <>
   <Button onClick={()=>setOpen(true)} className="h-10"><Plus className="size-4"/>إضافة أمر عمل</Button>
@@ -49,7 +55,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
    <DialogContent className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl">
     <DialogHeader className="text-start"><DialogTitle>إضافة أمر عمل جديد</DialogTitle><DialogDescription>اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.</DialogDescription></DialogHeader>
     <form action={formAction} className="flex flex-col gap-5">
-      <input type="hidden" name="items_json" value={JSON.stringify(items)}/>
+      <input type="hidden" name="items_json" value={JSON.stringify(items)}/><input type="hidden" name="services_json" value={JSON.stringify(serviceItems)}/>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
        <div>
         <Label htmlFor="customer_id">اسم العميل *</Label>
@@ -93,6 +99,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock}:Pr
       </div>
       <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">يتم عرض مخزون الفرع المختار فقط، والأسعار تُسحب تلقائياً من سعر البيع في المخزن.</p>
       <div><Label>الأعطال</Label><Textarea name="faults" rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
+      <ServiceSection services={services} items={serviceItems} onAdd={addService} onQty={updateServiceQty} onRemove={removeService}/>
       <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الفلاتر" items={items} stock={filters} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
@@ -126,3 +133,5 @@ function StockSection({title,items,stock,onAdd,onQty,onRemove}:{title:string;ite
  const selected=items.map(i=>stock.find(s=>s.id===i.part_id)).filter(Boolean) as Stock[]
  return <section className="rounded-lg border p-4"><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">{title}</h3><NativeSelect onChange={e=>{onAdd(e.target.value);e.currentTarget.value=''}} defaultValue=""><option value="">إضافة {title === 'الزيوت'?'زيت':'صنف'}...</option>{stock.map(s=><option key={s.id} value={s.id}>{s.name} — المتاح {s.quantity}</option>)}</NativeSelect></div>{selected.length===0?<p className="text-sm text-muted-foreground">لم تتم إضافة أي {title === 'الزيوت'?'زيوت':'أصناف'}.</p>:<div className="space-y-2">{selected.map(s=>{const q=items.find(i=>i.part_id===s.id)?.quantity||1;return <div key={s.id} className="flex items-center gap-2"><span className="min-w-0 flex-1 text-sm">{s.name} <span className="text-muted-foreground">(متاح {s.quantity})</span></span><Input type="number" min="1" max={s.quantity} value={q} onChange={e=>onQty(s.id,Number(e.target.value))} className="w-24"/><Button type="button" variant="ghost" size="icon-sm" onClick={e=>{e.preventDefault();e.stopPropagation();onRemove(s.id)}}><Trash2 className="size-4"/></Button></div>})}</div>}</section>
 }
+
+function ServiceSection({services,items,onAdd,onQty,onRemove}:{services:Service[];items:{service_id:string;quantity:number}[];onAdd:(id:string)=>void;onQty:(id:string,q:number)=>void;onRemove:(id:string)=>void}){return <section className="rounded-lg border p-4"><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">الخدمات</h3><NativeSelect defaultValue="" disabled={!services.length} onChange={e=>{onAdd(e.target.value);e.currentTarget.value='' }}><option value="">{services.length?'إضافة خدمة...':'لا توجد خدمات متاحة'}</option>{services.map(s=><option key={s.id} value={s.id}>{s.name} — {Number(s.price).toFixed(2)} ج.م</option>)}</NativeSelect></div>{items.length===0?<p className="text-sm text-muted-foreground">لم تتم إضافة أي خدمة.</p>:<div className="space-y-2">{items.map(i=>{const s=services.find(x=>x.id===i.service_id);if(!s)return null;return <div key={i.service_id} className="flex items-center gap-2"><span className="min-w-0 flex-1 text-sm">{s.name} <span className="text-muted-foreground">({Number(s.price).toFixed(2)} ج.م)</span></span><Input type="number" min="1" value={i.quantity} onChange={e=>onQty(i.service_id,Number(e.target.value))} className="w-24"/><Button type="button" variant="ghost" size="icon-sm" onClick={()=>onRemove(i.service_id)}><Trash2 className="size-4"/></Button></div>})}</div>}</section>}
