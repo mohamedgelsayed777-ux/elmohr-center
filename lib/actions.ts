@@ -234,6 +234,8 @@ export async function deleteRecord(resourceKey: string, id: string): Promise<Act
   if (!resource || !UUID_RE.test(id)) return { ok: false, error: 'طلب غير صالح' }
 
   const supabase = await requireUser()
+  const { data: roleData } = await supabase.rpc('current_user_role')
+  if (roleData === 'reception' && resource.key === 'work_orders') return { ok: false, error: 'ليس لديك صلاحية حذف أوامر العمل' }
   if (resource.key === 'parts') {
     const { data: deleted, error } = await supabase
       .from('parts')
