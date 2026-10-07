@@ -57,7 +57,7 @@ export default function DeletedRecordsPage(){
   const ids=[...new Set(filtered.map(x=>x.user_id).filter(Boolean) as string[])]
   if(ids.length){const{data:p}=await supabase.from('profiles').select('id,full_name,role,employee_code').in('id',ids);setProfiles(Object.fromEntries(((p??[])as Profile[]).map(x=>[x.id,x])))}
   const idsFor=(k:string)=>[...new Set(filtered.map(x=>x.old_data?.[k]).filter(v=>typeof v==='string'&&v))] as string[]
-  const [cu,ca,br,em,pa]=await Promise.all([idsFor('customer_id').length?s.from('customers').select('id,full_name').in('id',idsFor('customer_id')):Promise.resolve({data:[]}),idsFor('car_id').length?s.from('cars').select('id,make,model,plate_number').in('id',idsFor('car_id')):Promise.resolve({data:[]}),idsFor('branch_id').length?s.from('branches').select('id,name').in('id',idsFor('branch_id')):Promise.resolve({data:[]}),idsFor('employee_id').length?s.from('employees').select('id,full_name').in('id',idsFor('employee_id')):Promise.resolve({data:[]}),idsFor('part_id').length?s.from('parts').select('id,name,part_number').in('id',idsFor('part_id')):Promise.resolve({data:[]})])
+  const [cu,ca,br,em,pa]=await Promise.all([idsFor('customer_id').length?supabase.from('customers').select('id,full_name').in('id',idsFor('customer_id')):Promise.resolve({data:[]}),idsFor('car_id').length?supabase.from('cars').select('id,make,model,plate_number').in('id',idsFor('car_id')):Promise.resolve({data:[]}),idsFor('branch_id').length?supabase.from('branches').select('id,name').in('id',idsFor('branch_id')):Promise.resolve({data:[]}),idsFor('employee_id').length?supabase.from('employees').select('id,full_name').in('id',idsFor('employee_id')):Promise.resolve({data:[]}),idsFor('part_id').length?supabase.from('parts').select('id,name,part_number').in('id',idsFor('part_id')):Promise.resolve({data:[]})])
   const map:Record<string,string>={}
   ;(cu.data??[]).forEach((x:any)=>map[x.id]=x.full_name)
   ;(ca.data??[]).forEach((x:any)=>map[x.id]=[x.make,x.model,x.plate_number].filter(Boolean).join(' — '))
@@ -66,6 +66,7 @@ export default function DeletedRecordsPage(){
   ;(pa.data??[]).forEach((x:any)=>map[x.id]=(x.part_number?'SP-'+x.part_number+' — ':'')+x.name)
   setLookups(map)
   setLoading(false)
+ }catch(e){setError(e instanceof Error?e.message:'حدث خطأ أثناء تحميل سجل المحذوفات');setLoading(false)}
  })()},[year,month,day])
  return <div className="mx-auto flex max-w-7xl flex-col">
   <div className="mb-5"><div className="flex items-center gap-2"><Trash2 className="size-6 text-destructive"/><h1 className="text-2xl font-bold">سجل المحذوفات</h1></div><p className="mt-1 text-muted-foreground">سجل محفوظ لكل ما تم حذفه، بالتفاصيل الأصلية قبل الحذف — للمدير فقط</p></div>
