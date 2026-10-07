@@ -25,6 +25,8 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const [open,setOpen]=useState(false)
  const [state,formAction,pending]=useActionState(saveWorkOrderIntake,initialState)
  const [customerId,setCustomerId]=useState('')
+ const [customerSearch,setCustomerSearch]=useState('')
+ const filteredCustomers=useMemo(()=>{const q=customerSearch.trim().toLowerCase();if(!q)return customers;return customers.filter(c=>`${c.label} ${c.phone}`.toLowerCase().includes(q))},[customers,customerSearch])
  const [carId,setCarId]=useState('')
  const [branchId,setBranchId]=useState(branches[0]?.value || '')
  const [items,setItems]=useState<{part_id:string;quantity:number}[]>([])
@@ -59,9 +61,10 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
        <div>
         <Label htmlFor="customer_id">اسم العميل *</Label>
-        <NativeSelect id="customer_id" name="customer_id" required value={customerId} onChange={e=>{const id=e.target.value;const c=customers.find(x=>x.value===id);setCustomerId(id);setCarId('');setBranchId(c?.branch_id || branches[0]?.value || '');setItems([])}}>
-          <option value="">اختر العميل</option>
-          {customers.map(o=><option key={o.value} value={o.value}>{o.label}{o.phone ? ` — ${o.phone}` : ''}</option>)}
+        <Input value={customerSearch} onChange={e=>setCustomerSearch(e.target.value)} placeholder="ابحث باسم العميل أو رقم التليفون..." className="mt-1.5" autoComplete="off"/>
+        <NativeSelect id="customer_id" name="customer_id" required value={customerId} className="mt-2" onChange={e=>{const id=e.target.value;const c=customers.find(x=>x.value===id);setCustomerId(id);setCustomerSearch(c?.label??'');setCarId('');setBranchId(c?.branch_id || branches[0]?.value || '');setItems([])}}>
+          <option value="">اختر العميل ({filteredCustomers.length})</option>
+          {filteredCustomers.map(o=><option key={o.value} value={o.value}>{o.label}{o.phone ? ` — ${o.phone}` : ''}</option>)}
         </NativeSelect>
         {customers.length===0&&<p className="mt-1 text-xs text-muted-foreground">لا يوجد عملاء مسجلون بعد</p>}
        </div>
