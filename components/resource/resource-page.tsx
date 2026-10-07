@@ -39,6 +39,7 @@ export async function ResourcePage({
   const supabase = await createClient()
   const { data: roleData } = await supabase.rpc('current_user_role')
   const addOnly = ['accountant', 'reception'].includes(roleData ?? '') && ['attendance', 'services', 'parts'].includes(resourceKey)
+  const canDelete = !(roleData === 'reception' && resourceKey === 'work_orders')
   const relationOptions = await loadRelationOptions(resource)
   const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
   const inventoryTitle = resourceKey === 'parts' && inventoryType === 'part' ? 'مخزن قطع الغيار' : resourceKey === 'parts' && inventoryType === 'filter' ? 'مخزن الفلاتر' : resourceKey === 'parts' && inventoryType === 'oil' ? 'مخزن الزيوت' : resource.title
@@ -273,7 +274,7 @@ export async function ResourcePage({
                           record={row}
                           inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
                         />
-                        <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />
+                        {canDelete && <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />}
                           </>
                         )}
                       </div>
