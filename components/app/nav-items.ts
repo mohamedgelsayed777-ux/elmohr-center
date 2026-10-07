@@ -13,6 +13,7 @@ import {
   UserCog,
   Wallet,
   History,
+  Trash2,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -57,6 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: '/employees', label: 'الموظفون', icon: UserCog },
       { href: '/attendance', label: 'سجل الحضور', icon: ClipboardCheck },
       { href: '/audit-logs', label: 'سجل العمليات', icon: History },
+      { href: '/deleted-records', label: 'سجل المحذوفات', icon: Trash2 },
     ],
   },
 ]
