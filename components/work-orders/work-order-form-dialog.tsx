@@ -15,7 +15,7 @@ import { saveWorkOrderIntake, type ActionState } from '@/lib/actions'
 type Option={value:string;label:string}
 type Customer={value:string;label:string;phone:string;branch_id:string|null}
 type Car={id:string;customer_id:string;make:string;model:string;year:number|null;plate_number:string;vin:string;color:string;mileage:number|null}
-type Stock={id:string;name:string;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil';branch_id:string|null}
+type Stock={id:string;name:string;sku:string|null;part_number:number|null;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil';branch_id:string|null}
 type Service={id:string;name:string;price:number;category:string|null}
 type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[];stock:Stock[];services:Service[]}
 
@@ -134,9 +134,9 @@ function Info({label,value}:{label:string;value:unknown}){
 
 function SearchableStockSelect({title,stock,onAdd}:{title:string;stock:Stock[];onAdd:(id:string)=>void}){
  const [query,setQuery]=useState(''); const [open,setOpen]=useState(false)
- const filtered=useMemo(()=>{const q=query.trim().toLowerCase();if(!q)return stock;return stock.filter(s=>s.name.toLowerCase().includes(q))},[stock,query])
- return <div className='relative w-full sm:w-80'><Input value={query} onChange={e=>{setQuery(e.target.value);setOpen(true)}} onFocus={()=>setOpen(true)} placeholder={stock.length?'ابحث في '+title+'...':'لا توجد '+title+' متاحة'} disabled={!stock.length} autoComplete='off'/>
- {open&&stock.length>0&&<div className='absolute inset-x-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md'>{filtered.length===0?<p className='p-2 text-sm text-muted-foreground'>لا توجد نتائج</p>:filtered.map(s=><button key={s.id} type='button' className='flex w-full items-center justify-between rounded-sm px-3 py-2 text-start text-sm hover:bg-muted' onClick={()=>{onAdd(s.id);setQuery('');setOpen(false)}}><span>{s.name}</span><span className='text-xs text-muted-foreground'>{s.sale_price.toFixed(2)} ج.م — متاح {s.quantity}</span></button>)}</div>}
+ const filtered=useMemo(()=>{const q=query.trim().toLowerCase();if(!q)return stock;return stock.filter(s=>[s.name,s.sku??'',s.part_number?.toString()??''].some(v=>v.toLowerCase().includes(q)))},[stock,query])
+ return <div className='relative w-full sm:w-80'><Input value={query} onChange={e=>{setQuery(e.target.value);setOpen(true)}} onFocus={()=>setOpen(true)} placeholder={stock.length?'ابحث بالاسم أو جزء منه أو الكود...':'لا توجد '+title+' متاحة'} disabled={!stock.length} autoComplete='off'/>
+ {open&&stock.length>0&&<div className='absolute inset-x-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md'>{filtered.length===0?<p className='p-2 text-sm text-muted-foreground'>لا توجد نتائج</p>:filtered.map(s=><button key={s.id} type='button' className='flex w-full items-center justify-between rounded-sm px-3 py-2 text-start text-sm hover:bg-muted' onClick={()=>{onAdd(s.id);setQuery('');setOpen(false)}}><span>{s.name}{s.sku||s.part_number ? <span className='ms-2 text-xs text-muted-foreground'>كود: {s.sku||s.part_number}</span>:null}</span><span className='text-xs text-muted-foreground'>{s.sale_price.toFixed(2)} ج.م — متاح {s.quantity}</span></button>)}</div>}
  </div>
 }
 
