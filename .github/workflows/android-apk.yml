@@ -11,35 +11,61 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Locate Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find /opt/android-sdk /usr/local/lib/android /opt/hostedtoolcache -type f -name sdkmanager 2>/dev/null | head -1)"
+          fi
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found"
+            exit 1
+          fi
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
 
-      - name: Install Android SDK
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Build installable debug APK
+      - name: Build debug APK
         working-directory: android
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Verify APK
         working-directory: android
+        shell: bash
         run: |
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
-          test -x "$APKSIGNER"
-          "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner 2>/dev/null | sort -V | tail -1)"
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner not found"
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK"
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: ElMohr-Center-Android-Debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
