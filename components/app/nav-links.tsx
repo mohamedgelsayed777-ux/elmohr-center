@@ -36,12 +36,7 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
                 <a
                   key={item.href}
                   href="/attendance"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    onNavigate?.()
-                    window.location.assign('/attendance')
-                  }}
-                  aria-current={active ? 'page' : undefined}
+                   aria-current={active ? 'page' : undefined}
                   className={className}
                 >
                   <Icon className="size-4.5 shrink-0" />
