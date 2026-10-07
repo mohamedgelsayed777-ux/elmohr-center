@@ -14,10 +14,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   await claimFirstManager()
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+  const { data: profile } = await supabase.from('profiles').select('full_name,role').eq('id', user.id).maybeSingle()
   const role = profile?.role ?? 'reception'
 
-  const name = (user.user_metadata?.full_name as string | undefined) || user.email?.split('@')[0] || 'موظف'
+  const name = profile?.full_name || (user.user_metadata?.full_name as string | undefined) || user.email?.split('@')[0] || 'موظف'
 
   return (
     <div className="flex min-h-dvh">
