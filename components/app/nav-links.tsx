@@ -25,7 +25,25 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
             {items.map((item) => {
               const active = isActive(pathname, item.href)
               const Icon = item.icon
-              return (
+              return item.href.split('?')[0] === '/attendance' ? (
+                <a
+                  key={item.href}
+                  href="/attendance"
+                  onClickCapture={() => {
+                    window.location.href = '/attendance'
+                  }}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                    active
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  )}
+                >
+                  <Icon className="size-4.5 shrink-0" />
+                  {item.label}
+                </a>
+              ) : (
                 <Link
                   key={item.href}
                   href={item.href}
