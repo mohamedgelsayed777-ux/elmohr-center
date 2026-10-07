@@ -7,6 +7,9 @@ on:
       - 'android/**'
       - '.github/workflows/android-apk.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -69,3 +72,37 @@ jobs:
           name: ElMohr-Center-Android-Debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Prepare direct download page
+        shell: bash
+        run: |
+          mkdir -p public
+          cp android/app/build/outputs/apk/debug/app-debug.apk public/ElMohr-Center.apk
+          cat > public/index.html <<'EOF'
+          <!doctype html>
+          <html lang="ar" dir="rtl">
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>مركز المهر - تحميل التطبيق</title>
+          <body style="font-family:sans-serif;text-align:center;padding:40px">
+          <h1>مركز المهر</h1>
+          <p>تحميل تطبيق مركز المهر للأندرويد</p>
+          <a href="./ElMohr-Center.apk" download style="display:inline-block;padding:15px 25px;background:#1F4E79;color:white;border-radius:8px;text-decoration:none">تحميل التطبيق APK</a>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
