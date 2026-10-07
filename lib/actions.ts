@@ -276,6 +276,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   const amountPaid = Number(formData.get('amount_paid') ?? 0)
   const paymentMethod = String(formData.get('payment_method') ?? '').trim() || null
   const itemsRaw = String(formData.get('items_json') ?? '[]')
+  const servicesRaw = String(formData.get('services_json') ?? '[]')
 
   if (!UUID_RE.test(branchId)) return { ok: false, error: 'الفرع غير صحيح' }
   if (!UUID_RE.test(customerId)) return { ok: false, error: 'العميل المختار غير صحيح' }
@@ -294,6 +295,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   if (customer.branch_id && customer.branch_id !== branchId) return { ok: false, error: 'العميل تابع لفرع مختلف عن الفرع المختار' }
 
   let items: Array<{ part_id: string; quantity: number }> = []
+  let serviceItems: Array<{ service_id: string; quantity: number }> = []
   try {
     const parsed = JSON.parse(itemsRaw)
     if (!Array.isArray(parsed)) throw new Error()
@@ -303,6 +305,12 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   } catch {
     return { ok: false, error: 'بيانات قطع الغيار غير صحيحة' }
   }
+
+  try {
+    const parsed = JSON.parse(servicesRaw)
+    if (!Array.isArray(parsed)) throw new Error()
+    serviceItems = parsed.map((item) => ({ service_id: String(item.service_id ?? ''), quantity: Number(item.quantity) })).filter((item) => UUID_RE.test(item.service_id) && Number.isFinite(item.quantity) && item.quantity > 0)
+  } catch { return { ok: false, error: 'بيانات الخدمات غير صحيحة' } }
 
   if (items.length) {
     const { data: availableParts, error: partsError } = await supabase
@@ -360,11 +368,15 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     ? await supabase.from('parts').select('id,name,sale_price,inventory_type').in('id', items.map((i) => i.part_id))
     : { data: [] as any[] }
 
+  const { data: pricedServices } = serviceItems.length ? await supabase.from('services').select('id,name,price').eq('is_active', true).in('id', serviceItems.map((i) => i.service_id)) : { data: [] as any[] }
+  if (serviceItems.length !== (pricedServices?.length ?? 0)) return { ok: false, error: 'إحدى الخدمات المختارة غير موجودة أو غير متاحة' }
+
   const partsTotal = items.reduce(
     (sum, item) => sum + Number(pricedParts?.find((p) => p.id === item.part_id)?.sale_price ?? 0) * item.quantity,
     0,
   )
-  const totalAmount = Math.round((partsTotal + laborAmount) * 100) / 100
+  const servicesTotal = serviceItems.reduce((sum, item) => sum + Number(pricedServices?.find((s) => s.id === item.service_id)?.price ?? 0) * item.quantity, 0)
+  const totalAmount = Math.round((partsTotal + servicesTotal + laborAmount) * 100) / 100
   if (amountPaid > totalAmount) return { ok: false, error: 'المبلغ المدفوع أكبر من إجمالي الفاتورة' }
 
   if (createdOrder) {
@@ -398,6 +410,10 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
       .single()
 
     if (invoice) {
+      if (pricedServices?.length) {
+        const { error: serviceItemsError } = await supabase.from('invoice_items').insert(serviceItems.map((item) => { const s = pricedServices.find((x) => x.id === item.service_id); return { invoice_id: invoice.id, item_type: 'service', part_id: null, description: s?.name ?? 'خدمة', quantity: item.quantity, unit_price: Number(s?.price ?? 0), total: Math.round(Number(s?.price ?? 0) * item.quantity * 100) / 100 } }))
+        if (serviceItemsError) return { ok: false, error: friendlyDbError(serviceItemsError.code) }
+      }
       if (pricedParts?.length) {
         await supabase.from('invoice_items').insert(
           items.map((item) => {
