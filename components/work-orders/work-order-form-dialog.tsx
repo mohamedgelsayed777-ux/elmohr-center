@@ -111,7 +111,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
       </div>
       <div className="rounded-xl border-2 bg-muted/30 p-4">
        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div><p className="text-sm text-muted-foreground">إجمالي قطع الغيار والأصناف</p><p className="mt-1 text-xl font-bold">{partsTotal.toFixed(2)} ج.م</p></div>
+        <div><p className="text-sm text-muted-foreground">إجمالي الأصناف والخدمات</p><p className="mt-1 text-xl font-bold">{(partsTotal + servicesTotal).toFixed(2)} ج.م</p><p className="mt-1 text-xs text-muted-foreground">أصناف: {partsTotal.toFixed(2)} ج.م — خدمات: {servicesTotal.toFixed(2)} ج.م</p></div>
         <div><p className="text-sm text-muted-foreground">المصنعيات</p><p className="mt-1 text-xl font-bold">{laborAmount.toFixed(2)} ج.م</p></div>
         <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">الإجمالي المستحق</p><p className="mt-1 text-2xl font-bold">{totalAmount.toFixed(2)} ج.م</p><p className="mt-1 text-sm text-muted-foreground">المتبقي: {remainingAmount.toFixed(2)} ج.م</p></div>
        </div>
