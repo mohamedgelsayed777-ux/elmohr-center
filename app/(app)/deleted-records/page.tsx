@@ -49,7 +49,7 @@ export default function DeletedRecordsPage(){
   setLoading(true);setError('')
   try{
   const supabase=createClient()
-  const[{data,error},{data:archived,error:archiveError}]=await Promise.all([supabase.from('audit_logs').select('id,log_number,user_id,action,table_name,record_id,old_data,occurred_at').eq('action','DELETE').order('occurred_at',{ascending:false}).limit(500),supabase.from('audit_logs_archive').select('id,log_number,user_id,action,table_name,record_id,old_data,occurred_at').eq('action','DELETE').order('occurred_at',{ascending:false}).limit(500)])
+  const[{data,error},{data:archived,error:archiveError}]=await Promise.all([supabase.from('audit_logs').select('id,log_number,user_id,action,table_name,record_id,old_data,occurred_at').eq('action','DELETE').order('occurred_at',{ascending:false}).limit(500),supabase.rpc('get_archived_deleted_logs')])
   if(error||archiveError){setError((error??archiveError)?.message??'تعذر تحميل سجل المحذوفات');setLoading(false);return}
   let filtered=(data??[]) as DeletedRow[]
   if(year) filtered=filtered.filter(x=>new Date(x.occurred_at).getFullYear()===Number(year))
