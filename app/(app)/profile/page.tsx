@@ -79,3 +79,4 @@ export default function ProfilePage(){
    <button onClick={changePassword} disabled={changing} className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-medium disabled:opacity-60"><Lock className="size-4"/>{changing?'جاري التغيير...':'تغيير كلمة المرور'}</button>
   </div>
  </div>
+}
