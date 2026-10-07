@@ -18,7 +18,6 @@ export function AppHeader({ name, email, role }: { name: string; email: string; 
           <p className="text-xs text-muted-foreground">{role === 'manager' ? 'مدير المركز' : role === 'accountant' ? 'محاسب' : 'مهندس استقبال'}</p><p className="text-xs text-muted-foreground" dir="ltr">{email}</p>
         </Link>
         <Link href="/profile" aria-label="البروفايل" className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground hover:opacity-80">
-           items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
           {initial}
         </Link>
         <form action={signOut}>
