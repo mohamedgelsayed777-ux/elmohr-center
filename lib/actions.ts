@@ -279,6 +279,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   const paymentMethod = String(formData.get('payment_method') ?? '').trim() || null
   const itemsRaw = String(formData.get('items_json') ?? '[]')
   const servicesRaw = String(formData.get('services_json') ?? '[]')
+  const manualPurchasedRaw = String(formData.get('manual_purchased_items_json') ?? '[]')
 
   if (!UUID_RE.test(branchId)) return { ok: false, error: 'الفرع غير صحيح' }
   if (!UUID_RE.test(customerId)) return { ok: false, error: 'العميل المختار غير صحيح' }
@@ -298,6 +299,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
 
   let items: Array<{ part_id: string; quantity: number }> = []
   let serviceItems: Array<{ service_id: string; quantity: number }> = []
+  let manualPurchasedItems: Array<{ description: string; price: number }> = []
   try {
     const parsed = JSON.parse(itemsRaw)
     if (!Array.isArray(parsed)) throw new Error()
@@ -313,6 +315,13 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     if (!Array.isArray(parsed)) throw new Error()
     serviceItems = parsed.map((item) => ({ service_id: String(item.service_id ?? ''), quantity: Number(item.quantity) })).filter((item) => UUID_RE.test(item.service_id) && Number.isFinite(item.quantity) && item.quantity > 0)
   } catch { return { ok: false, error: 'بيانات الخدمات غير صحيحة' } }
+
+  try {
+    const parsed = JSON.parse(manualPurchasedRaw)
+    if (!Array.isArray(parsed)) throw new Error()
+    manualPurchasedItems = parsed.map((item) => ({ description: String(item.description ?? '').trim(), price: Number(item.price) })).filter((item) => item.description.length > 0 || item.price > 0)
+    if (manualPurchasedItems.some((item) => !item.description || item.description.length > 200 || !Number.isFinite(item.price) || item.price < 0)) return { ok: false, error: 'راجع اسم وسعر قطع الغيار المشتراة يدويًا' }
+  } catch { return { ok: false, error: 'بيانات قطع الغيار المشتراة يدويًا غير صحيحة' } }
 
   if (items.length) {
     const { data: availableParts, error: partsError } = await supabase
@@ -378,7 +387,8 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
     0,
   )
   const servicesTotal = serviceItems.reduce((sum, item) => sum + Number(pricedServices?.find((s) => s.id === item.service_id)?.price ?? 0) * item.quantity, 0)
-  const totalAmount = Math.round((partsTotal + servicesTotal + laborAmount) * 100) / 100
+  const manualPurchasedTotal = manualPurchasedItems.reduce((sum, item) => sum + item.price, 0)
+  const totalAmount = Math.round((partsTotal + servicesTotal + manualPurchasedTotal + laborAmount) * 100) / 100
   if (amountPaid > totalAmount) return { ok: false, error: 'المبلغ المدفوع أكبر من إجمالي الفاتورة' }
 
   if (createdOrder) {
@@ -431,6 +441,18 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
             }
           }),
         )
+      }
+      if (manualPurchasedItems.length) {
+        const { error: manualItemsError } = await supabase.from('invoice_items').insert(manualPurchasedItems.map((item) => ({
+          invoice_id: invoice.id,
+          item_type: 'part',
+          part_id: null,
+          description: item.description,
+          quantity: 1,
+          unit_price: item.price,
+          total: Math.round(item.price * 100) / 100,
+        })))
+        if (manualItemsError) return { ok: false, error: friendlyDbError(manualItemsError.code) }
       }
       if (laborAmount > 0) {
         await supabase.from('invoice_items').insert({
