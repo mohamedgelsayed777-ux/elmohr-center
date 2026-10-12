@@ -13,10 +13,10 @@ const plexArabic = IBM_Plex_Sans_Arabic({
 
 export const metadata: Metadata = {
   title: {
-    default: 'مركز المهر | نظام الإدارة',
-    template: '%s | مركز المهر',
+    default: 'مركز المهر | فرع مصر الجديدة',
+    template: '%s | مركز المهر - فرع مصر الجديدة',
   },
-  description: 'نظام إدارة مركز المهر لخدمة السيارات - للاستخدام الداخلي للموظفين',
+  description: 'نظام إدارة مركز المهر - فرع مصر الجديدة - للاستخدام الداخلي للموظفين',
   generator: 'ElMohr Center Management',
   robots: { index: false, follow: false },
   icons: {
