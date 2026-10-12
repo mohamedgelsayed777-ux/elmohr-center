@@ -63,7 +63,7 @@ export async function loadRelationOptions(resource: Resource) {
         .from(q.table)
         .select(q.select)
         .order(q.order, { ascending: key !== 'work_orders' })
-        .limit(500)
+        .limit(key === 'vehicle_catalog' ? 5000 : 500)
       const options: Option[] = ((data ?? []) as unknown as Row[]).map((r) => ({
         value: key === 'vehicle_catalog' ? `${r.make}|||${r.model}` : String(r.id),
         label: q.label(r),
