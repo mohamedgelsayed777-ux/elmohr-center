@@ -51,7 +51,10 @@ union all select 'parts', count(*) from public.parts where branch_id is null
 union all select 'work_orders', count(*) from public.work_orders where branch_id is null
 union all select 'invoices', count(*) from public.invoices where branch_id is null
 union all select 'expenses', count(*) from public.expenses where branch_id is null
-union all select 'attendance', count(*) from public.attendance where branch_id is null;
+union all select 'attendance_without_branch_employee', count(*)
+from public.attendance a
+join public.employees e on e.id = a.employee_id
+where e.branch_id is null;
 
 -- 6) Row counts for baseline comparison before/after any test import.
 select 'branches' as table_name, count(*) as row_count from public.branches
