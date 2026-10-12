@@ -39,6 +39,7 @@ export type Field = {
   fullWidth?: boolean
   hint?: string
   readOnly?: boolean
+  allowCustom?: boolean
 }
 
 export type ColumnFormat =
@@ -145,8 +146,8 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     filters: [{ name: 'customer_id', label: 'العميل', relation: 'customers' }],
     fields: [
       { name: 'customer_id', label: 'المالك (العميل)', type: 'relation', relation: 'customers', required: true, fullWidth: true },
-      { name: 'make', label: 'الشركة المصنعة', type: 'text', required: true, placeholder: 'اختر الشركة المصنعة' },
-      { name: 'model', label: 'الطراز', type: 'text', required: true, placeholder: 'اختر الطراز' },
+      { name: 'make', label: 'الشركة المصنعة', type: 'text', required: true, placeholder: 'اختر أو اكتب الشركة المصنعة', allowCustom: true },
+      { name: 'model', label: 'الطراز', type: 'text', required: true, placeholder: 'اختر أو اكتب الطراز', allowCustom: true },
       { name: 'year', label: 'سنة الصنع', type: 'number', min: 1950 },
       { name: 'plate_number', label: 'رقم اللوحة', type: 'text', required: true },
       { name: 'color', label: 'اللون', type: 'text' },
