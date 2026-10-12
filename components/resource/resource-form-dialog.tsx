@@ -149,20 +149,20 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                     }
                     readOnly={resourceKey === 'invoices' && ['customer_id', 'branch_id', 'subtotal'].includes(field.name)}
                     onValueChange={
-                      resourceKey === 'invoices' && ['discount', 'tax', 'paid_amount'].includes(field.name)
-                        ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
-                        : undefined
-                    }
-                    onSpecialChange={
                       resourceKey === 'cars' && field.name === 'make'
                         ? (value) => { setSelectedMake(value); setSelectedModel('') }
                         : resourceKey === 'cars' && field.name === 'model'
                           ? setSelectedModel
-                          : resourceKey === 'parts' && field.name === 'inventory_type'
-                          ? setSelectedInventoryType
-                          : resourceKey === 'invoices' && field.name === 'work_order_id'
-                            ? handleInvoiceWorkOrder
+                          : resourceKey === 'invoices' && ['discount', 'tax', 'paid_amount'].includes(field.name)
+                            ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
                             : undefined
+                    }
+                    onSpecialChange={
+                      resourceKey === 'parts' && field.name === 'inventory_type'
+                        ? setSelectedInventoryType
+                        : resourceKey === 'invoices' && field.name === 'work_order_id'
+                          ? handleInvoiceWorkOrder
+                          : undefined
                     }
                   />
                 ))}
@@ -273,6 +273,32 @@ function FieldInput({
         </NativeSelect>
         {readOnly && <input type="hidden" name={field.name} value={String(value)} />}
         {field.type === 'relation' && options.length === 0 && <p className="text-xs text-muted-foreground">لا توجد سجلات متاحة بعد</p>}
+        {hint}
+      </div>
+    )
+  }
+
+  if (field.allowCustom && specialOptions) {
+    const listId = `${inputId}-options`
+    return (
+      <div className={wrapper}>
+        {label}
+        <Input
+          id={inputId}
+          name={field.name}
+          value={String(value ?? '')}
+          onChange={(e) => onValueChange?.(e.target.value)}
+          list={listId}
+          required={field.required}
+          placeholder={field.placeholder}
+          autoComplete="off"
+          className="h-10"
+        />
+        <datalist id={listId}>
+          {specialOptions.map((option) => (
+            <option key={option.value} value={option.value} />
+          ))}
+        </datalist>
         {hint}
       </div>
     )
