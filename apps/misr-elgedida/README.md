@@ -1,36 +1,13 @@
-# ELMOHR CENTER – Misr El Gedida
+# تطبيق مركز المهر — فرع مصر الجديدة
 
-Standalone web-app workspace for the Misr El Gedida branch of ElMohr Center.
+هذه نسخة مصدرية مستقلة من واجهة وتوجيهات تطبيق مركز المهر الأصلي، داخل `apps/misr-elgedida`.
 
-## Current stage
-- GitHub-only starter scaffold.
-- No production deployment.
-- No Supabase project or credentials configured.
-- No customer or operational data copied from the existing app.
-- Data migration is intentionally blocked until the existing data inventory is reviewed and an explicit transfer list is approved.
+## تشغيل محلي آمن
+1. انسخ `.env.example` إلى `.env.local`.
+2. لا تضع بيانات مشروع Supabase الإنتاجي هنا. استخدم مشروعًا منفصلًا ومعزولًا فقط بعد إعداد مخطط قاعدة البيانات وسياسات الصلاحيات.
+3. ثبّت الاعتماديات باستخدام `pnpm install` ثم شغّل `pnpm dev`.
 
-## Local development
-Requires Node.js 20+ and pnpm.
-
-```bash
-pnpm install
-pnpm dev
-```
-
-## Planned modules
-- Dashboard and daily work-order overview
-- Customers and vehicles
-- Work orders and services
-- Invoices and payment methods
-- Separate inventories for spare parts, filters, and oils
-- Expenses and daily reports
-- Attendance
-- User roles and branch-scoped permissions
-- Audit log and monthly archiving
-
-## Data and security rules
-1. Never point this app at the production Supabase project during development.
-2. Do not copy production secrets, credentials, or personal data into GitHub.
-3. Review the existing data table-by-table before approving any transfer.
-4. Keep the central manager's cross-branch access separate from branch-manager access.
-5. Enforce authorization in the database/server layer, not only by hiding UI elements.
+## الحالة الحالية
+- تم نسخ ملفات واجهة التطبيق وصفحاته ومكوّناته ومواردها وإعدادات البناء إلى هذا المجلد.
+- لم يتم إنشاء قاعدة بيانات مستقلة، ولم يتم ربط هذه النسخة بقاعدة الإنتاج، ولم يتم نشرها.
+- لا تعتبر النسخة جاهزة للتشغيل الفعلي حتى يتم إعداد قاعدة بيانات مستقلة، تطبيق سياسات العزل، واختبار تسجيل الدخول وأوامر الشغل والفواتير والمخازن والصلاحيات والبناء.
