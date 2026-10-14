@@ -49,6 +49,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
     work_order_id: String(record?.work_order_id ?? ''),
     customer_id: String(record?.customer_id ?? ''),
     branch_id: String(record?.branch_id ?? ''),
+    recipient_name: String(record?.recipient_name ?? ''),
     subtotal: String(record?.subtotal ?? 0),
     discount: String(record?.discount ?? 0),
     tax: String(record?.tax ?? 0),
