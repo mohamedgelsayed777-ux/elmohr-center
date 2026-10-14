@@ -329,7 +329,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     singular: 'فاتورة',
     description: 'إصدار الفواتير ومتابعة المدفوعات',
     select:
-      'id, invoice_number, work_order_id, customer_id, branch_id, subtotal, discount, tax, total, paid_amount, status, payment_method, issued_at, customer:customers(full_name), branch:branches(name), work_order:work_orders(order_number)',
+      'id, invoice_number, work_order_id, customer_id, branch_id, recipient_name, subtotal, discount, tax, total, paid_amount, status, payment_method, issued_at, customer:customers(full_name), branch:branches(name), work_order:work_orders(order_number)',
     orderBy: { column: 'issued_at', ascending: false },
     searchColumns: [],
     searchPlaceholder: '',
@@ -344,6 +344,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'work_order_id', label: 'أمر العمل المرتبط', type: 'relation', relation: 'work_orders' },
       branchField,
       { name: 'payment_method', label: 'طريقة الدفع', type: 'select', options: toOptions(PAYMENT_METHOD) },
+      { name: 'recipient_name', label: 'المستلم', type: 'text', placeholder: 'اكتب اسم المستلم' },
       { name: 'subtotal', label: 'المبلغ قبل الخصم', type: 'number', min: 0, step: '0.01', required: true, defaultValue: 0 },
       { name: 'discount', label: 'الخصم', type: 'number', min: 0, step: '0.01', defaultValue: 0 },
       { name: 'tax', label: 'الضريبة', type: 'number', min: 0, step: '0.01', defaultValue: 0 },
