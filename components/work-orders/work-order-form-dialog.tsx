@@ -31,6 +31,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const [branchId,setBranchId]=useState(branches[0]?.value || '')
  const [items,setItems]=useState<{part_id:string;quantity:number}[]>([])
  const [serviceItems,setServiceItems]=useState<{service_id:string;quantity:number}[]>([])
+ const [manualPurchasedItems,setManualPurchasedItems]=useState<{description:string;price:number}[]>([])
  const selectedCustomer=customers.find(c=>c.value===customerId)
  const customerCars=useMemo(()=>cars.filter(c=>c.customer_id===customerId),[cars,customerId])
  const selectedCar=customerCars.find(c=>c.id===carId)
@@ -40,9 +41,10 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const oils=branchStock.filter(s=>s.inventory_type==='oil')
  const partsTotal=useMemo(()=>items.reduce((sum,item)=>sum+(Number(branchStock.find(s=>s.id===item.part_id)?.sale_price??0)*item.quantity),0),[items,branchStock])
  const servicesTotal=useMemo(()=>serviceItems.reduce((sum,item)=>sum+(Number(services.find(s=>s.id===item.service_id)?.price??0)*item.quantity),0),[serviceItems,services])
+ const manualPurchasedTotal=useMemo(()=>manualPurchasedItems.reduce((sum,item)=>sum+Math.max(0,Number(item.price)||0),0),[manualPurchasedItems])
  const [laborAmount,setLaborAmount]=useState(0)
  const [amountPaid,setAmountPaid]=useState(0)
- const totalAmount=useMemo(()=>Math.round((partsTotal+servicesTotal+laborAmount)*100)/100,[partsTotal,servicesTotal,laborAmount])
+ const totalAmount=useMemo(()=>Math.round((partsTotal+servicesTotal+manualPurchasedTotal+laborAmount)*100)/100,[partsTotal,servicesTotal,manualPurchasedTotal,laborAmount])
  const remainingAmount=Math.max(0,Math.round((totalAmount-amountPaid)*100)/100)
  const addItem=(id:string)=>{if(!id)return;setItems(x=>x.some(i=>i.part_id===id)?x:x.concat({part_id:id,quantity:1}))}
  const updateQty=(id:string,q:number)=>setItems(x=>q<=0?x.filter(i=>i.part_id!==id):x.map(i=>i.part_id===id?{...i,quantity:q}:i))
@@ -50,14 +52,14 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const addService=(id:string)=>{if(!id)return;setServiceItems(x=>x.some(i=>i.service_id===id)?x:x.concat({service_id:id,quantity:1}))}
  const updateServiceQty=(id:string,q:number)=>setServiceItems(x=>q<=0?x.filter(i=>i.service_id!==id):x.map(i=>i.service_id===id?{...i,quantity:q}:i))
  const removeService=(id:string)=>setServiceItems(x=>x.filter(i=>i.service_id!==id))
- useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
+ useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
  return <>
   <Button onClick={()=>setOpen(true)} className="h-10"><Plus className="size-4"/>إضافة أمر عمل</Button>
   <Dialog open={open} onOpenChange={setOpen}>
    <DialogContent className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl">
     <DialogHeader className="text-start"><DialogTitle>إضافة أمر عمل جديد</DialogTitle><DialogDescription>اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.</DialogDescription></DialogHeader>
     <form action={formAction} className="flex flex-col gap-5">
-      <input type="hidden" name="items_json" value={JSON.stringify(items)}/><input type="hidden" name="services_json" value={JSON.stringify(serviceItems)}/>
+      <input type="hidden" name="items_json" value={JSON.stringify(items)}/><input type="hidden" name="services_json" value={JSON.stringify(serviceItems)}/><input type="hidden" name="manual_purchased_items_json" value={JSON.stringify(manualPurchasedItems)}/>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
        <div>
         <Label htmlFor="customer_id">اسم العميل *</Label>
@@ -106,6 +108,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
       <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الفلاتر" items={items} stock={filters} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
+      <ManualPurchasedPartsSection items={manualPurchasedItems} onChange={setManualPurchasedItems}/>
       <div><Label>الإصلاحات التي تم تنفيذها</Label><Textarea name="repairs_done" rows={3} className="mt-1.5" placeholder="اكتب الإصلاحات والأعمال التي تم تنفيذها"/></div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
        <div><Label>المصنعيات</Label><Input name="labor_amount" type="number" min="0" step="0.01" value={laborAmount} onChange={e=>setLaborAmount(Math.max(0,Number(e.target.value)||0))} className="mt-1.5"/></div>
@@ -114,7 +117,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
       </div>
       <div className="rounded-xl border-2 bg-muted/30 p-4">
        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div><p className="text-sm text-muted-foreground">إجمالي الأصناف والخدمات</p><p className="mt-1 text-xl font-bold">{(partsTotal + servicesTotal).toFixed(2)} ج.م</p><p className="mt-1 text-xs text-muted-foreground">أصناف: {partsTotal.toFixed(2)} ج.م — خدمات: {servicesTotal.toFixed(2)} ج.م</p></div>
+        <div><p className="text-sm text-muted-foreground">إجمالي الأصناف والخدمات</p><p className="mt-1 text-xl font-bold">{(partsTotal + servicesTotal).toFixed(2)} ج.م</p><p className="mt-1 text-xs text-muted-foreground">مخزون: {partsTotal.toFixed(2)} ج.م — مشتريات يدوية: {manualPurchasedTotal.toFixed(2)} ج.م — خدمات: {servicesTotal.toFixed(2)} ج.م</p></div>
         <div><p className="text-sm text-muted-foreground">المصنعيات</p><p className="mt-1 text-xl font-bold">{laborAmount.toFixed(2)} ج.م</p></div>
         <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">الإجمالي المستحق</p><p className="mt-1 text-2xl font-bold">{totalAmount.toFixed(2)} ج.م</p><p className="mt-1 text-sm text-muted-foreground">المتبقي: {remainingAmount.toFixed(2)} ج.م</p></div>
        </div>
@@ -125,6 +128,19 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
    </DialogContent>
   </Dialog>
  </>
+}
+
+
+function ManualPurchasedPartsSection({items,onChange}:{items:{description:string;price:number}[];onChange:(items:{description:string;price:number}[])=>void}){
+ return <section className="rounded-lg border p-4">
+  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><h3 className="font-semibold">قطع غيار مشتريات (إدخال يدوي)</h3><p className="text-xs text-muted-foreground">لا تخصم من المخزن؛ تُضاف قيمتها للفاتورة</p></div>
+  {items.length===0?<p className="mb-3 text-sm text-muted-foreground">لم تتم إضافة مشتريات يدوية.</p>:<div className="mb-3 space-y-3">{items.map((item,index)=><div key={index} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_150px_auto] sm:items-end">
+   <div><Label>اسم قطعة الغيار</Label><Input value={item.description} onChange={e=>onChange(items.map((x,i)=>i===index?{...x,description:e.target.value}:x))} placeholder="اكتب اسم قطعة الغيار" maxLength={200}/></div>
+   <div><Label>السعر (ج.م)</Label><Input type="number" min="0" step="0.01" value={item.price} onChange={e=>onChange(items.map((x,i)=>i===index?{...x,price:Math.max(0,Number(e.target.value)||0)}:x))}/></div>
+   <Button type="button" variant="ghost" size="icon-sm" aria-label="حذف المشتريات" onClick={()=>onChange(items.filter((_,i)=>i!==index))}><Trash2 className="size-4"/></Button>
+  </div>)}</div>}
+  <div className="flex flex-wrap items-center justify-between gap-2"><Button type="button" variant="outline" onClick={()=>onChange([...items,{description:"",price:0}])}><Plus className="size-4"/>إضافة قطعة مشتراة</Button><p className="text-sm font-semibold">إجمالي المشتريات اليدوية: {items.reduce((sum,item)=>sum+Math.max(0,Number(item.price)||0),0).toFixed(2)} ج.م</p></div>
+ </section>
 }
 
 function Info({label,value}:{label:string;value:unknown}){
