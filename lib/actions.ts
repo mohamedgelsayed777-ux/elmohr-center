@@ -242,10 +242,21 @@ export async function getWorkOrderEditData(workOrderId: string) {
   if (role !== 'manager' && (!userBranch || order.branch_id !== userBranch)) return { ok: false as const, error: 'ليس لديك صلاحية تعديل أمر العمل هذا' }
   const { data: rows, error } = await supabase.from('work_order_items').select('item_type,service_id,part_id,description,quantity,unit_price').eq('work_order_id', workOrderId)
   if (error) return { ok: false as const, error: 'تعذر تحميل أصناف أمر العمل' }
-  const items = (rows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
-  const serviceItems = (rows ?? []).filter((x) => x.item_type === 'service' && x.service_id).map((x) => ({ service_id: x.service_id as string, quantity: Number(x.quantity ?? 1) }))
-  const manualPurchasedItems = (rows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && !x.service_id && x.description !== 'مصنعيات').map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
-  return { ok: true as const, order, items, serviceItems, manualPurchasedItems }
+  const { data: invoice } = await supabase.from('invoices').select('id').eq('work_order_id', workOrderId).order('issued_at', { ascending: true }).limit(1).maybeSingle()
+  const { data: invoiceRows } = invoice?.id
+    ? await supabase.from('invoice_items').select('item_type,part_id,description,quantity,unit_price').eq('invoice_id', invoice.id)
+    : { data: [] as Array<{item_type:string;part_id:string|null;description:string|null;quantity:number|null;unit_price:number|null}> }
+  const itemsFromOrder = (rows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
+  const itemsFromInvoice = (invoiceRows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
+  const serviceRows = (rows ?? []).filter((x) => x.item_type === 'service' && x.service_id)
+  const serviceItems = serviceRows.length
+    ? serviceRows.map((x) => ({ service_id: x.service_id as string, quantity: Number(x.quantity ?? 1) }))
+    : (invoiceRows ?? []).filter((x) => x.item_type === 'service').map((x) => ({ service_id: '', quantity: 0, description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) })).filter(x => x.description)
+  const manualRows = (rows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && !x.service_id && x.description !== 'مصنعيات')
+  const manualPurchasedItems = manualRows.length
+    ? manualRows.map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
+    : (invoiceRows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && x.description !== 'مصنعيات').map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
+  return { ok: true as const, order, items: itemsFromOrder.length ? itemsFromOrder : itemsFromInvoice, serviceItems, manualPurchasedItems }
 }
 
 export async function saveWorkOrderEdit(
