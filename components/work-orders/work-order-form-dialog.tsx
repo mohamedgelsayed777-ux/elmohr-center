@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -23,6 +24,7 @@ type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[]
 const initialState:ActionState={ok:false}
 
 export function WorkOrderFormDialog({branches,employees,customers,cars,stock,services,record}:Props){
+ const router=useRouter()
  const [open,setOpen]=useState(false)
  const [loadingRecord,setLoadingRecord]=useState(false)
  const action=record ? saveWorkOrderEdit.bind(null,record.id) : saveWorkOrderIntake
@@ -55,7 +57,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const addService=(id:string)=>{if(!id)return;setServiceItems(x=>x.some(i=>i.service_id===id)?x:x.concat({service_id:id,quantity:1}))}
  const updateServiceQty=(id:string,q:number)=>setServiceItems(x=>q<=0?x.filter(i=>i.service_id!==id):x.map(i=>i.service_id===id?{...i,quantity:q}:i))
  const removeService=(id:string)=>setServiceItems(x=>x.filter(i=>i.service_id!==id))
- useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success(record?'تم حفظ تعديلات أمر العمل والفاتورة':'تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok,record])
+ useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success(record?'تم حفظ تعديلات أمر العمل والفاتورة':'تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح');router.refresh()}},[state.ok,record,router])
  const openDialog=async()=>{
   setOpen(true)
   if(!record)return
