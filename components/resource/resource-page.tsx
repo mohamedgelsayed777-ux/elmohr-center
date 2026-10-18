@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { CellValue } from './cell-value'
 import { ResourceToolbar, type ToolbarFilter } from './resource-toolbar'
 import { ResourceFormDialog } from './resource-form-dialog'
+import { WorkOrderFormDialog } from '@/components/work-orders/work-order-form-dialog'
 import { DeleteButton } from './delete-button'
 
 const PAGE_SIZE = 20
@@ -30,10 +31,12 @@ export async function ResourcePage({
   resourceKey,
   searchParams,
   headerActions,
+  workOrderFormProps,
 }: {
   resourceKey: ResourceKey
   searchParams: SearchParams
   headerActions?: React.ReactNode
+  workOrderFormProps?: Omit<React.ComponentProps<typeof WorkOrderFormDialog>, 'record'>
 }) {
   const resource = RESOURCES[resourceKey]
   const supabase = await createClient()
@@ -196,14 +199,18 @@ export async function ResourcePage({
                     {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
                     {!addOnly && (
                       <>
-<ResourceFormDialog
-                      resourceKey={resource.key}
-                      singular={resource.singular}
-                      fields={resource.fields}
-                      relationOptions={relationOptions}
-                      record={row}
-                      inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
-                    />
+{resourceKey === 'work_orders' && workOrderFormProps ? (
+                      <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
+                    ) : (
+                      <ResourceFormDialog
+                        resourceKey={resource.key}
+                        singular={resource.singular}
+                        fields={resource.fields}
+                        relationOptions={relationOptions}
+                        record={row}
+                        inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
+                      />
+                    )}
                     <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />
                       </>
                     )}
@@ -266,14 +273,18 @@ export async function ResourcePage({
                         {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
                         {!addOnly && (
                           <>
-<ResourceFormDialog
-                          resourceKey={resource.key}
-                          singular={resource.singular}
-                          fields={resource.fields}
-                          relationOptions={relationOptions}
-                          record={row}
-                          inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
-                        />
+{resourceKey === 'work_orders' && workOrderFormProps ? (
+                          <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
+                        ) : (
+                          <ResourceFormDialog
+                            resourceKey={resource.key}
+                            singular={resource.singular}
+                            fields={resource.fields}
+                            relationOptions={relationOptions}
+                            record={row}
+                            inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
+                          />
+                        )}
                         {canDelete && <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />}
                           </>
                         )}

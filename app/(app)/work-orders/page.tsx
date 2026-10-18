@@ -64,6 +64,18 @@ export default async function Page({ searchParams }: PageProps<'/work-orders'>) 
           />
         </div>
       }
+      workOrderFormProps={{
+        branches: (branches ?? []).map(x => ({ value: x.id, label: x.name })),
+        employees: (employees ?? []).map(x => ({ value: x.id, label: x.full_name })),
+        customers: (customers ?? []).map(x => ({ value: x.id, label: x.full_name, phone: x.phone ?? '', branch_id: x.branch_id })),
+        cars: (cars ?? []).map(x => ({
+          id: x.id, customer_id: x.customer_id, make: x.make ?? '', model: x.model ?? '',
+          year: x.year ?? null, plate_number: x.plate_number ?? '', vin: x.vin ?? '',
+          color: x.color ?? '', mileage: x.mileage ?? null,
+        })),
+        stock: (stock ?? []).map(x => ({ ...x, branch_id: x.branch_id ?? null, quantity: Number(x.quantity ?? 0), sale_price: Number(x.sale_price ?? 0), inventory_type: (x.inventory_type === 'oil' ? 'oil' : x.inventory_type === 'filter' ? 'filter' : 'part') as 'part'|'filter'|'oil' })),
+        services: (services ?? []).map(x => ({ id: x.id, name: x.name, price: Number(x.price ?? 0), category: x.category ?? null })),
+      }}
     />
   )
 }

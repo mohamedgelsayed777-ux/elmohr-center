@@ -229,6 +229,134 @@ export async function saveRecord(
   return { ok: true, at: Date.now(), recordId: id ?? returnValue }
 }
 
+
+export async function getWorkOrderEditData(workOrderId: string) {
+  if (!UUID_RE.test(workOrderId)) return { ok: false as const, error: 'معرف أمر العمل غير صحيح' }
+  const supabase = await requireUser()
+  const [{ data: role }, { data: userBranch }, { data: order, error: orderError }] = await Promise.all([
+    supabase.rpc('current_user_role'),
+    supabase.rpc('current_user_branch_id'),
+    supabase.from('work_orders').select('id,order_number,customer_id,car_id,branch_id,employee_id,status,priority,description,repairs_done,labor_amount,amount_paid,payment_method,total_amount').eq('id', workOrderId).maybeSingle(),
+  ])
+  if (orderError || !order) return { ok: false as const, error: 'أمر العمل غير موجود أو لا يمكنك الوصول إليه' }
+  if (role !== 'manager' && (!userBranch || order.branch_id !== userBranch)) return { ok: false as const, error: 'ليس لديك صلاحية تعديل أمر العمل هذا' }
+  const { data: rows, error } = await supabase.from('work_order_items').select('item_type,service_id,part_id,description,quantity,unit_price').eq('work_order_id', workOrderId)
+  if (error) return { ok: false as const, error: 'تعذر تحميل أصناف أمر العمل' }
+  const { data: invoice } = await supabase.from('invoices').select('id').eq('work_order_id', workOrderId).order('issued_at', { ascending: true }).limit(1).maybeSingle()
+  const { data: invoiceRows } = invoice?.id
+    ? await supabase.from('invoice_items').select('item_type,part_id,description,quantity,unit_price').eq('invoice_id', invoice.id)
+    : { data: [] as Array<{item_type:string;part_id:string|null;description:string|null;quantity:number|null;unit_price:number|null}> }
+  const { data: serviceCatalog } = await supabase.from('services').select('id,name').eq('is_active', true)
+  const itemsFromOrder = (rows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
+  const itemsFromInvoice = (invoiceRows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
+  const serviceRows = (rows ?? []).filter((x) => x.item_type === 'service' && x.service_id)
+  const serviceItems = serviceRows.length
+    ? serviceRows.map((x) => ({ service_id: x.service_id as string, quantity: Number(x.quantity ?? 1) }))
+    : (invoiceRows ?? []).filter((x) => x.item_type === 'service').map((x) => ({
+        service_id: serviceCatalog?.find(s => s.name === x.description)?.id ?? '',
+        quantity: Number(x.quantity ?? 1),
+      })).filter(x => x.service_id)
+  const manualRows = (rows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && !x.service_id && x.description !== 'مصنعيات')
+  const manualPurchasedItems = manualRows.length
+    ? manualRows.map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
+    : (invoiceRows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && x.description !== 'مصنعيات').map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
+
+  // Legacy order 1068 has a 250 EGP total, no saved item lines, and the user confirmed
+  // the whole amount is labor. Load the authoritative total into the labor field.
+  const hasSavedItemRows = (rows?.length ?? 0) > 0 || (invoiceRows?.length ?? 0) > 0
+  const editOrder = !hasSavedItemRows && Number(order.total_amount ?? 0) > Number(order.labor_amount ?? 0)
+    ? { ...order, labor_amount: Number(order.total_amount) }
+    : order
+
+  return { ok: true as const, order: editOrder, items: itemsFromOrder.length ? itemsFromOrder : itemsFromInvoice, serviceItems, manualPurchasedItems }
+}
+
+export async function saveWorkOrderEdit(
+  workOrderId: string,
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  if (!UUID_RE.test(workOrderId)) return { ok: false, error: 'معرف أمر العمل غير صحيح' }
+  const supabase = await requireUser()
+  const branchId = String(formData.get('branch_id') ?? '').trim()
+  const customerId = String(formData.get('customer_id') ?? '').trim()
+  const carId = String(formData.get('car_id') ?? '').trim()
+  const employeeRaw = String(formData.get('employee_id') ?? '').trim()
+  const status = String(formData.get('status') ?? 'pending')
+  const priority = String(formData.get('priority') ?? 'normal')
+  const faults = String(formData.get('faults') ?? '').trim().slice(0, 2000)
+  const repairsDone = String(formData.get('repairs_done') ?? '').trim().slice(0, 2000)
+  const laborAmount = Number(formData.get('labor_amount') ?? 0)
+  const amountPaid = Number(formData.get('amount_paid') ?? 0)
+  const paymentMethodRaw = String(formData.get('payment_method') ?? '').trim()
+  const paymentMethod = paymentMethodRaw || null
+  let items: Array<{part_id:string;quantity:number}> = []
+  let serviceItems: Array<{service_id:string;quantity:number}> = []
+  let manualItems: Array<{description:string;price:number}> = []
+  try {
+    const parsed = JSON.parse(String(formData.get('items_json') ?? '[]'))
+    if (!Array.isArray(parsed)) throw new Error()
+    items = parsed.map((x) => ({part_id:String(x.part_id ?? ''),quantity:Number(x.quantity)}))
+    if (items.some((x) => !UUID_RE.test(x.part_id) || !Number.isFinite(x.quantity) || x.quantity <= 0 || x.quantity > 10000)) throw new Error()
+  } catch { return { ok:false, error:'بيانات قطع الغيار أو الكميات غير صحيحة' } }
+  try {
+    const parsed = JSON.parse(String(formData.get('services_json') ?? '[]'))
+    if (!Array.isArray(parsed)) throw new Error()
+    serviceItems = parsed.map((x) => ({service_id:String(x.service_id ?? ''),quantity:Number(x.quantity)}))
+    if (serviceItems.some((x) => !UUID_RE.test(x.service_id) || !Number.isFinite(x.quantity) || x.quantity <= 0 || x.quantity > 10000)) throw new Error()
+  } catch { return { ok:false, error:'بيانات الخدمات أو الكميات غير صحيحة' } }
+  try {
+    const parsed = JSON.parse(String(formData.get('manual_purchased_items_json') ?? '[]'))
+    if (!Array.isArray(parsed)) throw new Error()
+    manualItems = parsed.map((x) => ({description:String(x.description ?? '').trim(),price:Number(x.price)}))
+    if (manualItems.some((x) => !x.description || x.description.length > 200 || !Number.isFinite(x.price) || x.price < 0)) throw new Error()
+  } catch { return { ok:false, error:'راجع أسماء وأسعار قطع الغيار المشتراة يدويًا' } }
+  if (![laborAmount,amountPaid].every((x) => Number.isFinite(x) && x >= 0)) return { ok:false, error:'المبالغ المدخلة غير صحيحة' }
+  if (![branchId,customerId,carId].every((x) => UUID_RE.test(x))) return { ok:false, error:'اختر الفرع والعميل والسيارة بشكل صحيح' }
+  const { data, error } = await supabase.rpc('update_work_order_intake', {
+    p_work_order_id: workOrderId,
+    p_branch_id: branchId,
+    p_customer_id: customerId,
+    p_car_id: carId,
+    p_employee_id: UUID_RE.test(employeeRaw) ? employeeRaw : null,
+    p_status: status,
+    p_priority: priority,
+    p_faults: faults || null,
+    p_repairs_done: repairsDone || null,
+    p_labor_amount: laborAmount,
+    p_amount_paid: amountPaid,
+    p_payment_method: paymentMethod,
+    p_items: items,
+    p_services: serviceItems,
+    p_manual_items: manualItems,
+  })
+  if (error) {
+    const message = error.message ?? ''
+    if (message.includes('INSUFFICIENT_STOCK')) return { ok:false, error:'الكمية المطلوبة غير متوفرة في المخزن' }
+    if (message.includes('PART_BRANCH_MISMATCH')) return { ok:false, error:'إحدى قطع الغيار تابعة لفرع مختلف' }
+    if (message.includes('CUSTOMER_BRANCH_MISMATCH')) return { ok:false, error:'العميل مرتبط بفرع مختلف عن الفرع المختار' }
+    if (message.includes('INVALID_MANUAL_ITEM')) return { ok:false, error:'راجع اسم وسعر قطعة الغيار المشتراة يدويًا' }
+    if (message.includes('INVALID_PART_ITEM')) return { ok:false, error:'راجع قطع الغيار والكميات المختارة' }
+    if (message.includes('INVALID_SERVICE_ITEM')) return { ok:false, error:'راجع الخدمات والكميات المختارة' }
+    if (message.includes('NOT_AUTHENTICATED')) return { ok:false, error:'انتهت الجلسة، سجّل الدخول مرة أخرى' }
+    if (message.includes('WORK_ORDER_NOT_FOUND')) return { ok:false, error:'أمر العمل غير موجود أو تم حذفه' }
+    if (message.includes('INVALID_AMOUNT')) return { ok:false, error:'المبالغ يجب أن تكون أرقامًا موجبة أو صفرًا' }
+    if (message.includes('CAR_NOT_BELONG_TO_CUSTOMER')) return { ok:false, error:'السيارة المختارة غير مسجلة باسم العميل' }
+    if (message.includes('PAID_EXCEEDS_TOTAL')) return { ok:false, error:'المبلغ المدفوع أكبر من إجمالي أمر العمل' }
+    if (message.includes('BRANCH_FORBIDDEN')) return { ok:false, error:'ليس لديك صلاحية تعديل أمر العمل في هذا الفرع' }
+    if (message.includes('SERVICE_NOT_FOUND')) return { ok:false, error:'إحدى الخدمات لم تعد متاحة' }
+    if (message.includes('INVALID_STATUS')) return { ok:false, error:'حالة أمر العمل غير صحيحة' }
+    if (message.includes('INVALID_PRIORITY')) return { ok:false, error:'الأولوية غير صحيحة' }
+    if (message.includes('INVALID_PAYMENT')) return { ok:false, error:'طريقة الدفع غير صحيحة' }
+    return { ok:false, error: friendlyDbError(error.code) }
+  }
+  revalidatePath('/work-orders')
+  revalidatePath('/invoices')
+  revalidatePath('/parts')
+  revalidatePath('/')
+  return { ok:true, at:Date.now(), recordId:workOrderId }
+}
+
 export async function deleteRecord(resourceKey: string, id: string): Promise<ActionState> {
   const resource = getResource(resourceKey)
   if (!resource || !UUID_RE.test(id)) return { ok: false, error: 'طلب غير صالح' }

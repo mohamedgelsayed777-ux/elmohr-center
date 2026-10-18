@@ -172,7 +172,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     singular: 'أمر عمل',
     description: 'متابعة أوامر الإصلاح والصيانة وحالتها',
     select:
-      'id, order_number, customer_id, car_id, branch_id, employee_id, status, priority, description, mileage_in, total_amount, opened_at, completed_at, customer:customers(full_name), car:cars(make, model, plate_number), branch:branches(name), employee:employees(full_name)',
+      'id, order_number, customer_id, car_id, branch_id, employee_id, status, priority, description, repairs_done, mileage_in, total_amount, labor_amount, amount_paid, payment_method, opened_at, completed_at, customer:customers(full_name), car:cars(make, model, plate_number), branch:branches(name), employee:employees(full_name)',
     orderBy: { column: 'opened_at', ascending: false },
     searchColumns: ['description'],
     searchPlaceholder: 'ابحث في وصف العمل...',
