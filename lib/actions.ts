@@ -305,8 +305,6 @@ export async function saveWorkOrderEdit(
   } catch { return { ok:false, error:'راجع أسماء وأسعار قطع الغيار المشتراة يدويًا' } }
   if (![laborAmount,amountPaid].every((x) => Number.isFinite(x) && x >= 0)) return { ok:false, error:'المبالغ المدخلة غير صحيحة' }
   if (![branchId,customerId,carId].every((x) => UUID_RE.test(x))) return { ok:false, error:'اختر الفرع والعميل والسيارة بشكل صحيح' }
-  const { data: role } = await supabase.rpc('current_user_role')
-  if (role === 'reception') return { ok:false, error:'ليس لديك صلاحية تعديل تفاصيل أمر العمل' }
   const { data, error } = await supabase.rpc('update_work_order_intake', {
     p_work_order_id: workOrderId,
     p_branch_id: branchId,
