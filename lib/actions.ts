@@ -326,6 +326,13 @@ export async function saveWorkOrderEdit(
     const message = error.message ?? ''
     if (message.includes('INSUFFICIENT_STOCK')) return { ok:false, error:'الكمية المطلوبة غير متوفرة في المخزن' }
     if (message.includes('PART_BRANCH_MISMATCH')) return { ok:false, error:'إحدى قطع الغيار تابعة لفرع مختلف' }
+    if (message.includes('CUSTOMER_BRANCH_MISMATCH')) return { ok:false, error:'العميل مرتبط بفرع مختلف عن الفرع المختار' }
+    if (message.includes('INVALID_MANUAL_ITEM')) return { ok:false, error:'راجع اسم وسعر قطعة الغيار المشتراة يدويًا' }
+    if (message.includes('INVALID_PART_ITEM')) return { ok:false, error:'راجع قطع الغيار والكميات المختارة' }
+    if (message.includes('INVALID_SERVICE_ITEM')) return { ok:false, error:'راجع الخدمات والكميات المختارة' }
+    if (message.includes('NOT_AUTHENTICATED')) return { ok:false, error:'انتهت الجلسة، سجّل الدخول مرة أخرى' }
+    if (message.includes('WORK_ORDER_NOT_FOUND')) return { ok:false, error:'أمر العمل غير موجود أو تم حذفه' }
+    if (message.includes('INVALID_AMOUNT')) return { ok:false, error:'المبالغ يجب أن تكون أرقامًا موجبة أو صفرًا' }
     if (message.includes('CAR_NOT_BELONG_TO_CUSTOMER')) return { ok:false, error:'السيارة المختارة غير مسجلة باسم العميل' }
     if (message.includes('PAID_EXCEEDS_TOTAL')) return { ok:false, error:'المبلغ المدفوع أكبر من إجمالي أمر العمل' }
     if (message.includes('BRANCH_FORBIDDEN')) return { ok:false, error:'ليس لديك صلاحية تعديل أمر العمل في هذا الفرع' }
