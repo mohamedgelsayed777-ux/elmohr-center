@@ -62,13 +62,14 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
   setOpen(true)
   if(!record)return
   setLoadingRecord(true)
+  setItems([]);setServiceItems([]);setManualPurchasedItems([])
   try {
-   setCustomerId(String(record.customer_id??'')); setCustomerSearch(customers.find(c=>c.value===record.customer_id)?.label??'')
-   setCarId(String(record.car_id??'')); setBranchId(String(record.branch_id??branches[0]?.value??''))
-   setLaborAmount(Number(record.labor_amount??0)); setAmountPaid(Number(record.amount_paid??0))
    const result=await getWorkOrderEditData(record.id)
-   if(result.ok){setItems(result.items);setServiceItems(result.serviceItems);setManualPurchasedItems(result.manualPurchasedItems)}
-   else {toast.error(result.error);setOpen(false)}
+   if(!result.ok){toast.error(result.error);setOpen(false);return}
+   setCustomerId(String(result.order.customer_id??'')); setCustomerSearch(customers.find(c=>c.value===result.order.customer_id)?.label??'')
+   setCarId(String(result.order.car_id??'')); setBranchId(String(result.order.branch_id??branches[0]?.value??''))
+   setLaborAmount(Number(result.order.labor_amount??0)); setAmountPaid(Number(result.order.amount_paid??0))
+   setItems(result.items);setServiceItems(result.serviceItems);setManualPurchasedItems(result.manualPurchasedItems)
   } catch {
    toast.error('تعذر تحميل تفاصيل أمر العمل. أغلق النافذة وحاول مرة أخرى.')
    setOpen(false)
