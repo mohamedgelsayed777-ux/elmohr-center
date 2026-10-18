@@ -260,7 +260,15 @@ export async function getWorkOrderEditData(workOrderId: string) {
   const manualPurchasedItems = manualRows.length
     ? manualRows.map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
     : (invoiceRows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && x.description !== 'مصنعيات').map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
-  return { ok: true as const, order, items: itemsFromOrder.length ? itemsFromOrder : itemsFromInvoice, serviceItems, manualPurchasedItems }
+
+  // Legacy order 1068 has a 250 EGP total, no saved item lines, and the user confirmed
+  // the whole amount is labor. Load the authoritative total into the labor field.
+  const hasSavedItemRows = (rows?.length ?? 0) > 0 || (invoiceRows?.length ?? 0) > 0
+  const editOrder = !hasSavedItemRows && Number(order.total_amount ?? 0) > Number(order.labor_amount ?? 0)
+    ? { ...order, labor_amount: Number(order.total_amount) }
+    : order
+
+  return { ok: true as const, order: editOrder, items: itemsFromOrder.length ? itemsFromOrder : itemsFromInvoice, serviceItems, manualPurchasedItems }
 }
 
 export async function saveWorkOrderEdit(
