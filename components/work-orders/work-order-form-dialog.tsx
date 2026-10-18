@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { useActionState } from 'react'
-import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -10,20 +10,23 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/resource/native-select'
 import { Textarea } from '@/components/ui/textarea'
-import { saveWorkOrderIntake, type ActionState } from '@/lib/actions'
+import { getWorkOrderEditData, saveWorkOrderEdit, saveWorkOrderIntake, type ActionState } from '@/lib/actions'
 
 type Option={value:string;label:string}
 type Customer={value:string;label:string;phone:string;branch_id:string|null}
 type Car={id:string;customer_id:string;make:string;model:string;year:number|null;plate_number:string;vin:string;color:string;mileage:number|null}
 type Stock={id:string;name:string;sku:string|null;part_number:number|null;quantity:number;sale_price:number;inventory_type:'part'|'filter'|'oil';branch_id:string|null}
 type Service={id:string;name:string;price:number;category:string|null}
-type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[];stock:Stock[];services:Service[]}
+type WorkOrderRecord={id:string;[key:string]:unknown}
+type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[];stock:Stock[];services:Service[];record?:WorkOrderRecord}
 
 const initialState:ActionState={ok:false}
 
-export function WorkOrderFormDialog({branches,employees,customers,cars,stock,services}:Props){
+export function WorkOrderFormDialog({branches,employees,customers,cars,stock,services,record}:Props){
  const [open,setOpen]=useState(false)
- const [state,formAction,pending]=useActionState(saveWorkOrderIntake,initialState)
+ const [loadingRecord,setLoadingRecord]=useState(false)
+ const action=record ? saveWorkOrderEdit.bind(null,record.id) : saveWorkOrderIntake
+ const [state,formAction,pending]=useActionState(action,initialState)
  const [customerId,setCustomerId]=useState('')
  const [customerSearch,setCustomerSearch]=useState('')
  const filteredCustomers=useMemo(()=>{const q=customerSearch.trim().toLowerCase();if(!q)return customers;return customers.filter(c=>`${c.label} ${c.phone}`.toLowerCase().includes(q))},[customers,customerSearch])
@@ -35,7 +38,7 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const selectedCustomer=customers.find(c=>c.value===customerId)
  const customerCars=useMemo(()=>cars.filter(c=>c.customer_id===customerId),[cars,customerId])
  const selectedCar=customerCars.find(c=>c.id===carId)
- const branchStock=useMemo(()=>stock.filter(s=>!s.branch_id || s.branch_id===branchId),[stock,branchId])
+ const branchStock=useMemo(()=>stock.filter(s=>!s.branch_id || s.branch_id===branchId).map(s=>record ? {...s,quantity:s.quantity+(items.find(i=>i.part_id===s.id)?.quantity??0)} : s),[stock,branchId,record,items])
  const parts=branchStock.filter(s=>s.inventory_type==='part')
  const filters=branchStock.filter(s=>s.inventory_type==='filter')
  const oils=branchStock.filter(s=>s.inventory_type==='oil')
@@ -52,12 +55,23 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  const addService=(id:string)=>{if(!id)return;setServiceItems(x=>x.some(i=>i.service_id===id)?x:x.concat({service_id:id,quantity:1}))}
  const updateServiceQty=(id:string,q:number)=>setServiceItems(x=>q<=0?x.filter(i=>i.service_id!==id):x.map(i=>i.service_id===id?{...i,quantity:q}:i))
  const removeService=(id:string)=>setServiceItems(x=>x.filter(i=>i.service_id!==id))
- useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success('تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok])
+ useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success(record?'تم حفظ تعديلات أمر العمل والفاتورة':'تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح')}},[state.ok,record])
+ const openDialog=async()=>{
+  setOpen(true)
+  if(!record)return
+  setLoadingRecord(true)
+  setCustomerId(String(record.customer_id??'')); setCustomerSearch(customers.find(c=>c.value===record.customer_id)?.label??'')
+  setCarId(String(record.car_id??'')); setBranchId(String(record.branch_id??branches[0]?.value??''))
+  setLaborAmount(Number(record.labor_amount??0)); setAmountPaid(Number(record.amount_paid??0))
+  const result=await getWorkOrderEditData(record.id)
+  if(result.ok){setItems(result.items);setServiceItems(result.serviceItems);setManualPurchasedItems(result.manualPurchasedItems)}else{toast.error(result.error);setOpen(false)}
+  setLoadingRecord(false)
+ }
  return <>
-  <Button onClick={()=>setOpen(true)} className="h-10"><Plus className="size-4"/>إضافة أمر عمل</Button>
+  <Button onClick={openDialog} className="h-10">{record?<><Pencil className="size-4"/>تعديل أمر العمل</>:<><Plus className="size-4"/>إضافة أمر عمل</>}</Button>
   <Dialog open={open} onOpenChange={setOpen}>
    <DialogContent className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl">
-    <DialogHeader className="text-start"><DialogTitle>إضافة أمر عمل جديد</DialogTitle><DialogDescription>اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.</DialogDescription></DialogHeader>
+    <DialogHeader className="text-start"><DialogTitle>{record?`تعديل أمر العمل رقم ${String(record.order_number??'')}`:'إضافة أمر عمل جديد'}</DialogTitle><DialogDescription>{record?'عدّل الخدمات والأصناف والمبالغ، وسيتم تحديث المخزون والفاتورة مع الحفظ.':'اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.'}</DialogDescription></DialogHeader>
     <form action={formAction} className="flex flex-col gap-5">
       <input type="hidden" name="items_json" value={JSON.stringify(items)}/><input type="hidden" name="services_json" value={JSON.stringify(serviceItems)}/><input type="hidden" name="manual_purchased_items_json" value={JSON.stringify(manualPurchasedItems)}/>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -98,22 +112,22 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
          </div>
         </div>
        ) : null}
-       <div><Label>الفني المسؤول</Label><NativeSelect name="employee_id"><option value="">بدون</option>{employees.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</NativeSelect></div>
-       <div><Label>الحالة *</Label><NativeSelect name="status" defaultValue="pending"><option value="pending">قيد الانتظار</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="ready">جاهزة للتسليم</option><option value="delivered">تم التسليم</option><option value="cancelled">ملغي</option></NativeSelect></div>
-       <div><Label>الأولوية</Label><NativeSelect name="priority" defaultValue="normal"><option value="low">منخفضة</option><option value="normal">عادية</option><option value="high">عالية</option><option value="urgent">عاجلة</option></NativeSelect></div>
+       <div><Label>الفني المسؤول</Label><NativeSelect name="employee_id" defaultValue={String(record?.employee_id??'')}><option value="">بدون</option>{employees.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</NativeSelect></div>
+       <div><Label>الحالة *</Label><NativeSelect name="status" defaultValue={String(record?.status??'pending')}><option value="pending">قيد الانتظار</option><option value="in_progress">قيد التنفيذ</option><option value="completed">مكتمل</option><option value="ready">جاهزة للتسليم</option><option value="delivered">تم التسليم</option><option value="cancelled">ملغي</option></NativeSelect></div>
+       <div><Label>الأولوية</Label><NativeSelect name="priority" defaultValue={String(record?.priority??'normal')}><option value="low">منخفضة</option><option value="normal">عادية</option><option value="high">عالية</option><option value="urgent">عاجلة</option></NativeSelect></div>
       </div>
       <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">يتم عرض مخزون الفرع المختار فقط، والأسعار تُسحب تلقائياً من سعر البيع في المخزن.</p>
-      <div><Label>الأعطال</Label><Textarea name="faults" rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
+      <div><Label>الأعطال</Label><Textarea name="faults" defaultValue={String(record?.description??'')} rows={3} className="mt-1.5" placeholder="اكتب الأعطال والملاحظات كما وصفها العميل أو تم اكتشافها"/></div>
       <ServiceSection services={services} items={serviceItems} onAdd={addService} onQty={updateServiceQty} onRemove={removeService}/>
       <StockSection title="قطع الغيار" items={items} stock={parts} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الفلاتر" items={items} stock={filters} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <StockSection title="الزيوت" items={items} stock={oils} onAdd={addItem} onQty={updateQty} onRemove={removeItem}/>
       <ManualPurchasedPartsSection items={manualPurchasedItems} onChange={setManualPurchasedItems}/>
-      <div><Label>الإصلاحات التي تم تنفيذها</Label><Textarea name="repairs_done" rows={3} className="mt-1.5" placeholder="اكتب الإصلاحات والأعمال التي تم تنفيذها"/></div>
+      <div><Label>الإصلاحات التي تم تنفيذها</Label><Textarea name="repairs_done" defaultValue={String(record?.repairs_done??'')} rows={3} className="mt-1.5" placeholder="اكتب الإصلاحات والأعمال التي تم تنفيذها"/></div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
        <div><Label>المصنعيات</Label><Input name="labor_amount" type="number" min="0" step="0.01" value={laborAmount} onChange={e=>setLaborAmount(Math.max(0,Number(e.target.value)||0))} className="mt-1.5"/></div>
        <div><Label>المدفوع</Label><Input name="amount_paid" type="number" min="0" step="0.01" value={amountPaid} onChange={e=>setAmountPaid(Math.max(0,Number(e.target.value)||0))} className="mt-1.5"/></div>
-       <div><Label>طريقة الدفع</Label><NativeSelect name="payment_method"><option value="">اختر</option><option value="cash">نقدي</option><option value="instapay">إنستاباي</option><option value="wallet">محفظة</option><option value="visa">فيزا</option></NativeSelect></div>
+       <div><Label>طريقة الدفع</Label><NativeSelect name="payment_method" defaultValue={String(record?.payment_method==='card'?'visa':record?.payment_method==='transfer'?'instapay':record?.payment_method==='other'?'wallet':record?.payment_method??'')}><option value="">اختر</option><option value="cash">نقدي</option><option value="instapay">إنستاباي</option><option value="wallet">محفظة</option><option value="visa">فيزا</option></NativeSelect></div>
       </div>
       <div className="rounded-xl border-2 bg-muted/30 p-4">
        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -122,8 +136,8 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
         <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">الإجمالي المستحق</p><p className="mt-1 text-2xl font-bold">{totalAmount.toFixed(2)} ج.م</p><p className="mt-1 text-sm text-muted-foreground">المتبقي: {remainingAmount.toFixed(2)} ج.م</p></div>
        </div>
       </div>
-      {state.error&&<p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{state.error}</p>}
-      <DialogFooter><Button type="submit" disabled={pending||!customerId||!carId}>{pending&&<Loader2 className="size-4 animate-spin"/>}حفظ أمر العمل</Button><Button type="button" variant="outline" onClick={()=>setOpen(false)}>إلغاء</Button></DialogFooter>
+      {loadingRecord&&<p className="text-sm text-muted-foreground">جارٍ تحميل تفاصيل أمر العمل...</p>}{state.error&&<p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{state.error}</p>}
+      <DialogFooter><Button type="submit" disabled={pending||loadingRecord||!customerId||!carId}>{(pending||loadingRecord)&&<Loader2 className="size-4 animate-spin"/>}{record?'حفظ التعديلات':'حفظ أمر العمل'}</Button><Button type="button" variant="outline" onClick={()=>setOpen(false)}>إلغاء</Button></DialogFooter>
     </form>
    </DialogContent>
   </Dialog>
