@@ -246,12 +246,16 @@ export async function getWorkOrderEditData(workOrderId: string) {
   const { data: invoiceRows } = invoice?.id
     ? await supabase.from('invoice_items').select('item_type,part_id,description,quantity,unit_price').eq('invoice_id', invoice.id)
     : { data: [] as Array<{item_type:string;part_id:string|null;description:string|null;quantity:number|null;unit_price:number|null}> }
+  const { data: serviceCatalog } = await supabase.from('services').select('id,name').eq('is_active', true)
   const itemsFromOrder = (rows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
   const itemsFromInvoice = (invoiceRows ?? []).filter((x) => x.part_id && ['part','filter','oil'].includes(x.item_type)).map((x) => ({ part_id: x.part_id as string, quantity: Number(x.quantity ?? 1) }))
   const serviceRows = (rows ?? []).filter((x) => x.item_type === 'service' && x.service_id)
   const serviceItems = serviceRows.length
     ? serviceRows.map((x) => ({ service_id: x.service_id as string, quantity: Number(x.quantity ?? 1) }))
-    : (invoiceRows ?? []).filter((x) => x.item_type === 'service').map((x) => ({ service_id: '', quantity: 0, description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) })).filter(x => x.description)
+    : (invoiceRows ?? []).filter((x) => x.item_type === 'service').map((x) => ({
+        service_id: serviceCatalog?.find(s => s.name === x.description)?.id ?? '',
+        quantity: Number(x.quantity ?? 1),
+      })).filter(x => x.service_id)
   const manualRows = (rows ?? []).filter((x) => x.item_type === 'part' && !x.part_id && !x.service_id && x.description !== 'مصنعيات')
   const manualPurchasedItems = manualRows.length
     ? manualRows.map((x) => ({ description: String(x.description ?? ''), price: Number(x.unit_price ?? 0) }))
