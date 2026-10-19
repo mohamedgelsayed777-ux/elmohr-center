@@ -11,6 +11,17 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Deduplicate repeated part IDs from a submitted work-order payload so the same
+// visible stock line cannot be charged twice. If quantities conflict, retain the
+// largest explicit quantity instead of summing duplicate copies of the same line.
+function normalizePartItems(items: Array<{ part_id: string; quantity: number }>) {
+  const byPart = new Map<string, number>()
+  for (const item of items) {
+    byPart.set(item.part_id, Math.max(byPart.get(item.part_id) ?? 0, item.quantity))
+  }
+  return Array.from(byPart, ([part_id, quantity]) => ({ part_id, quantity }))
+}
+
 function parseField(field: Field, formData: FormData): { value: unknown; error?: string } {
   if (field.type === 'boolean') {
     return { value: formData.get(field.name) === 'on' }
