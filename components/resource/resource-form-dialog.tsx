@@ -10,6 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -102,14 +103,14 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   return (
     <>
       {isEdit ? (
-        <Button variant="ghost" size="icon-sm" onClick={() => setOpen(true)} aria-label={`تعديل ${singular}`}>
+        <DialogTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`تعديل ${singular}`} />}>
           <Pencil className="size-4" />
-        </Button>
+        </DialogTrigger>
       ) : (
-        <Button onClick={() => setOpen(true)} className="h-10 w-full sm:w-auto">
+        <DialogTrigger render={<Button type="button" className="h-10 w-full sm:w-auto" />}>
           <Plus className="size-4" aria-hidden="true" />
           {`إضافة ${singular}`}
-        </Button>
+        </DialogTrigger>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
