@@ -3,14 +3,6 @@
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { Loader2, Pencil, Plus, Printer } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -100,7 +92,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       {isEdit ? (
         <Button type="button" variant="ghost" size="icon-sm" aria-label={`تعديل ${singular}`} onClick={() => setOpen(true)}>
           <Pencil className="size-4" />
@@ -111,11 +103,11 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
           {`إضافة ${singular}`}
         </Button>
       )}
-      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader className="text-start">
-            <DialogTitle>{isEdit ? `تعديل ${singular}` : `إضافة ${singular} جديد`}</DialogTitle>
-            <DialogDescription>الحقول المميزة بعلامة * إلزامية</DialogDescription>
-          </DialogHeader>
+      {open && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false) }}><div role="dialog" aria-modal="true" className="relative max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground shadow-xl">
+          <div className="flex flex-col gap-2 text-start">
+            <h2 className="text-base font-medium leading-none">{isEdit ? `تعديل ${singular}` : `إضافة ${singular} جديد`}</h2>
+            <p className="text-sm text-muted-foreground">الحقول المميزة بعلامة * إلزامية</p>
+          </div>
           {open && (
             <form action={formAction} className="flex flex-col gap-5">
               {resourceKey === 'parts' && inventoryType && <input type="hidden" name="inventory_type" value={inventoryType} />}
@@ -183,7 +175,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                   {state.error}
                 </p>
               )}
-              <DialogFooter className="gap-2 sm:justify-start">
+              <div className="flex flex-col-reverse gap-2 border-t bg-muted/50 p-4 sm:flex-row sm:justify-start">
                 <Button type="submit" disabled={isPending} className="h-10">
                   {isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
                   {isEdit ? 'حفظ التعديلات' : 'حفظ'}
@@ -191,11 +183,11 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                 <Button type="button" variant="outline" className="h-10" onClick={() => setOpen(false)}>
                   إلغاء
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
           )}
-      </DialogContent>
-    </Dialog>
+      </div></div>}
+    </>
   )
 }
 
