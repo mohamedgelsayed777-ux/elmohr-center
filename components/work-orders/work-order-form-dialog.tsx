@@ -5,7 +5,6 @@ import { useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -76,10 +75,10 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
   } finally {setLoadingRecord(false)}
  }
  return <>
-  <Dialog open={open} onOpenChange={setOpen}>
+  <>
    <Button type="button" onClick={openDialog} aria-haspopup="dialog" className="h-10">{record?<><Pencil className="size-4"/>تعديل أمر العمل</>:<><Plus className="size-4"/>إضافة أمر عمل</>}</Button>
-   <DialogContent className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl">
-    <DialogHeader className="text-start"><DialogTitle>{record?`تعديل أمر العمل رقم ${String(record.order_number??'')}`:'إضافة أمر عمل جديد'}</DialogTitle><DialogDescription>{record?'عدّل الخدمات والأصناف والمبالغ، وسيتم تحديث المخزون والفاتورة مع الحفظ.':'اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.'}</DialogDescription></DialogHeader>
+   {open && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false) }}><div role="dialog" aria-modal="true" className="relative max-h-[94dvh] w-full max-w-3xl overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground shadow-xl">
+    <div className="flex flex-col gap-2 text-start"><h2 className="text-base font-medium leading-none">{record?`تعديل أمر العمل رقم ${String(record.order_number??'')}`:'إضافة أمر عمل جديد'}</h2><p className="text-sm text-muted-foreground">{record?'عدّل الخدمات والأصناف والمبالغ، وسيتم تحديث المخزون والفاتورة مع الحفظ.':'اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.'}</p></div>
     <form action={formAction} className="flex flex-col gap-5">
       <input type="hidden" name="items_json" value={JSON.stringify(items)}/><input type="hidden" name="services_json" value={JSON.stringify(serviceItems)}/><input type="hidden" name="manual_purchased_items_json" value={JSON.stringify(manualPurchasedItems)}/>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -145,10 +144,10 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
        </div>
       </div>
       {loadingRecord&&<p className="text-sm text-muted-foreground">جارٍ تحميل تفاصيل أمر العمل...</p>}{state.error&&<p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{state.error}</p>}
-      <DialogFooter><Button type="submit" disabled={pending||loadingRecord||!customerId||!carId}>{(pending||loadingRecord)&&<Loader2 className="size-4 animate-spin"/>}{record?'حفظ التعديلات':'حفظ أمر العمل'}</Button><Button type="button" variant="outline" onClick={()=>setOpen(false)}>إلغاء</Button></DialogFooter>
+      <div className="flex flex-col-reverse gap-2 border-t bg-muted/50 p-4 sm:flex-row sm:justify-end"><Button type="submit" disabled={pending||loadingRecord||!customerId||!carId}>{(pending||loadingRecord)&&<Loader2 className="size-4 animate-spin"/>}{record?'حفظ التعديلات':'حفظ أمر العمل'}</Button><Button type="button" variant="outline" onClick={()=>setOpen(false)}>إلغاء</Button></div>
     </form>
-   </DialogContent>
-  </Dialog>
+   </div></div>}
+  </>
  </>
 }
 
