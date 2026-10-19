@@ -299,6 +299,7 @@ export async function saveWorkOrderEdit(
     items = parsed.map((x) => ({part_id:String(x.part_id ?? ''),quantity:Number(x.quantity)}))
     if (items.some((x) => !UUID_RE.test(x.part_id) || !Number.isFinite(x.quantity) || x.quantity <= 0 || x.quantity > 10000)) throw new Error()
   } catch { return { ok:false, error:'بيانات قطع الغيار أو الكميات غير صحيحة' } }
+  items = normalizePartItems(items)
   try {
     const parsed = JSON.parse(String(formData.get('services_json') ?? '[]'))
     if (!Array.isArray(parsed)) throw new Error()
@@ -437,6 +438,7 @@ export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData
   } catch {
     return { ok: false, error: 'بيانات قطع الغيار غير صحيحة' }
   }
+  items = normalizePartItems(items)
 
   try {
     const parsed = JSON.parse(servicesRaw)
