@@ -76,8 +76,8 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
   } finally {setLoadingRecord(false)}
  }
  return <>
-  <Button type="button" onClick={openDialog} aria-haspopup="dialog" className="h-10">{record?<><Pencil className="size-4"/>تعديل أمر العمل</>:<><Plus className="size-4"/>إضافة أمر عمل</>}</Button>
   <Dialog open={open} onOpenChange={setOpen}>
+   <Button type="button" onClick={openDialog} aria-haspopup="dialog" className="h-10">{record?<><Pencil className="size-4"/>تعديل أمر العمل</>:<><Plus className="size-4"/>إضافة أمر عمل</>}</Button>
    <DialogContent className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl">
     <DialogHeader className="text-start"><DialogTitle>{record?`تعديل أمر العمل رقم ${String(record.order_number??'')}`:'إضافة أمر عمل جديد'}</DialogTitle><DialogDescription>{record?'عدّل الخدمات والأصناف والمبالغ، وسيتم تحديث المخزون والفاتورة مع الحفظ.':'اختر العميل أولاً، وستظهر سياراته المسجلة تلقائياً.'}</DialogDescription></DialogHeader>
     <form action={formAction} className="flex flex-col gap-5">
