@@ -101,7 +101,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   }
 
   return (
-    <>
+    <Dialog open={open} onOpenChange={setOpen}>
       {isEdit ? (
         <DialogTrigger render={<Button type="button" variant="ghost" size="icon-sm" aria-label={`تعديل ${singular}`} />}>
           <Pencil className="size-4" />
@@ -112,8 +112,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
           {`إضافة ${singular}`}
         </DialogTrigger>
       )}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader className="text-start">
             <DialogTitle>{isEdit ? `تعديل ${singular}` : `إضافة ${singular} جديد`}</DialogTitle>
             <DialogDescription>الحقول المميزة بعلامة * إلزامية</DialogDescription>
@@ -196,9 +195,8 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
               </DialogFooter>
             </form>
           )}
-        </DialogContent>
-      </Dialog>
-    </>
+      </DialogContent>
+    </Dialog>
   )
 }
 
