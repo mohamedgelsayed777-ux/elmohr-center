@@ -329,7 +329,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
     singular: 'فاتورة',
     description: 'إصدار الفواتير ومتابعة المدفوعات',
     select:
-      'id, invoice_number, work_order_id, customer_id, branch_id, subtotal, discount, tax, total, paid_amount, status, payment_method, issued_at, customer:customers(full_name), branch:branches(name), work_order:work_orders(order_number)',
+      'id, invoice_number, work_order_id, customer_id, branch_id, subtotal, discount, tax, total, paid_amount, recipient_name, status, payment_method, issued_at, customer:customers(full_name), branch:branches(name), work_order:work_orders(order_number)',
     orderBy: { column: 'issued_at', ascending: false },
     searchColumns: [],
     searchPlaceholder: '',
@@ -348,6 +348,7 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { name: 'discount', label: 'الخصم', type: 'number', min: 0, step: '0.01', defaultValue: 0 },
       { name: 'tax', label: 'الضريبة', type: 'number', min: 0, step: '0.01', defaultValue: 0 },
       { name: 'paid_amount', label: 'المبلغ المدفوع', type: 'number', min: 0, step: '0.01', defaultValue: 0 },
+      { name: 'recipient_name', label: 'المستلم', type: 'text', placeholder: 'اكتب اسم المستلم يدويًا' },
       {
         name: 'status',
         label: 'الحالة',
