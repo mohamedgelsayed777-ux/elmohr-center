@@ -1,12 +1,11 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { NAV_GROUPS, isActive } from './nav-items'
 
 export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?: string }) {
   const pathname = usePathname()
-  const router = useRouter()
 
   const can = (href: string) => {
     const path = href.split('?')[0]
@@ -37,11 +36,10 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
                   href={item.href}
                   onClick={(event) => {
                     if (!onNavigate) return
-                    // Navigate explicitly before closing the mobile sheet to avoid
-                    // the sheet-dismiss click interrupting navigation on mobile.
+                    // On mobile, force a document navigation instead of relying on
+                    // a client transition that may be interrupted as the sheet closes.
                     event.preventDefault()
-                    router.push(item.href)
-                    onNavigate()
+                    window.location.assign(item.href)
                   }}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
