@@ -134,6 +134,14 @@ export default async function ReportsPage({
                 <span>إجمالي البنود المفصلة</span>
                 <span className="tabular-nums">{formatCurrency(breakdown.reduce((total, item) => total + item.amount, 0))}</span>
               </div>
+              <div className="flex items-center justify-between gap-4 border-b pb-3">
+                <span className="text-sm">إجمالي الخصومات</span>
+                <span className="font-semibold tabular-nums">{formatCurrency(discountTotal)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-4 font-bold">
+                <span>صافي تفصيل الإيرادات بعد الخصومات</span>
+                <span className="tabular-nums">{formatCurrency(breakdown.reduce((total, item) => total + item.amount, 0) - discountTotal)}</span>
+              </div>
               <p className="text-xs text-muted-foreground">التفصيل مبني على بنود الفواتير في الفترة المختارة. قطع الغيار المشتراة خارج المخزن هي البنود المسجلة كقطع غيار بدون ربط بصنف مخزني.</p>
             </>
           )}
