@@ -42,7 +42,7 @@ export async function ResourcePage({
   const supabase = await createClient()
   const { data: roleData } = await supabase.rpc('current_user_role')
   const canEdit = !( ['accountant', 'reception'].includes(roleData ?? '') && ['attendance', 'services'].includes(resourceKey)) && !(roleData === 'reception' && resourceKey === 'parts')
-  const canDelete = resourceKey === 'invoices'
+  const canDelete = ['invoices', 'spare_part_requests'].includes(resourceKey)
     ? roleData === 'manager'
     : !(roleData === 'reception' && resourceKey === 'work_orders') && !(resourceKey === 'parts' && ['accountant', 'reception'].includes(roleData ?? ''))
   const relationOptions = await loadRelationOptions(resource)
