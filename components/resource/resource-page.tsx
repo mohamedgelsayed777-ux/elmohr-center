@@ -41,8 +41,10 @@ export async function ResourcePage({
   const resource = RESOURCES[resourceKey]
   const supabase = await createClient()
   const { data: roleData } = await supabase.rpc('current_user_role')
-  const addOnly = ['accountant', 'reception'].includes(roleData ?? '') && ['attendance', 'services', 'parts'].includes(resourceKey)
-  const canDelete = resourceKey === 'invoices' ? roleData === 'manager' : !(roleData === 'reception' && resourceKey === 'work_orders')
+  const canEdit = !( ['accountant', 'reception'].includes(roleData ?? '') && ['attendance', 'services'].includes(resourceKey)) && !(roleData === 'reception' && resourceKey === 'parts')
+  const canDelete = resourceKey === 'invoices'
+    ? roleData === 'manager'
+    : !(roleData === 'reception' && resourceKey === 'work_orders') && !(resourceKey === 'parts' && ['accountant', 'reception'].includes(roleData ?? ''))
   const relationOptions = await loadRelationOptions(resource)
   const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
   const inventoryTitle = resourceKey === 'parts' && inventoryType === 'part' ? 'مخزن قطع الغيار' : resourceKey === 'parts' && inventoryType === 'filter' ? 'مخزن الفلاتر' : resourceKey === 'parts' && inventoryType === 'oil' ? 'مخزن الزيوت' : resource.title
@@ -197,23 +199,21 @@ export async function ResourcePage({
                   </div>
                   <div className="flex shrink-0 items-center">
                     {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
-                    {!addOnly && (
-                      <>
-{resourceKey === 'work_orders' && workOrderFormProps ? (
-                      <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
-                    ) : (
-                      <ResourceFormDialog
-                        resourceKey={resource.key}
-                        singular={resource.singular}
-                        fields={resource.fields}
-                        relationOptions={relationOptions}
-                        record={row}
-                        inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
-                      />
+                    {canEdit && (
+                      resourceKey === 'work_orders' && workOrderFormProps ? (
+                        <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
+                      ) : (
+                        <ResourceFormDialog
+                          resourceKey={resource.key}
+                          singular={resource.singular}
+                          fields={resource.fields}
+                          relationOptions={relationOptions}
+                          record={row}
+                          inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
+                        />
+                      )
                     )}
-                    <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />
-                      </>
-                    )}
+                    {canDelete && <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />}
                   </div>
                 </div>
                 {details.length > 0 && (
@@ -271,23 +271,21 @@ export async function ResourcePage({
                     <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-1">
                         {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
-                        {!addOnly && (
-                          <>
-{resourceKey === 'work_orders' && workOrderFormProps ? (
-                          <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
-                        ) : (
-                          <ResourceFormDialog
-                            resourceKey={resource.key}
-                            singular={resource.singular}
-                            fields={resource.fields}
-                            relationOptions={relationOptions}
-                            record={row}
-                            inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
-                          />
+                        {canEdit && (
+                          resourceKey === 'work_orders' && workOrderFormProps ? (
+                            <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
+                          ) : (
+                            <ResourceFormDialog
+                              resourceKey={resource.key}
+                              singular={resource.singular}
+                              fields={resource.fields}
+                              relationOptions={relationOptions}
+                              record={row}
+                              inventoryType={resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType) ? inventoryType as 'part' | 'filter' | 'oil' : undefined}
+                            />
+                          )
                         )}
                         {canDelete && <DeleteButton resourceKey={resource.key} id={String(row.id)} singular={resource.singular} />}
-                          </>
-                        )}
                       </div>
                     </td>
                   </tr>
