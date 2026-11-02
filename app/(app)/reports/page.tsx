@@ -63,7 +63,7 @@ export default async function ReportsPage({
 
   const invoiceIds = (ir.data ?? []).map((invoice) => invoice.id)
   const { data: itemRows, error: itemRowsError } = invoiceIds.length
-    ? await supabase.from('invoice_items').select('item_type,part_id,total').in('invoice_id', invoiceIds)
+    ? await supabase.from('invoice_items').select('item_type,part_id,description,total').in('invoice_id', invoiceIds)
     : { data: [], error: null }
 
   const invoiceTotal = sum(ir.data, 'total')
@@ -78,8 +78,8 @@ export default async function ReportsPage({
     { title: 'قطع غيار من المخزن', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'part' && item.part_id), 'total') },
     { title: 'الزيوت', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'oil'), 'total') },
     { title: 'الفلاتر', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'filter'), 'total') },
-    { title: 'المصنعيات', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'labor'), 'total') },
-    { title: 'قطع غيار مشتراة خارج المخزن', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'part' && !item.part_id), 'total') },
+    { title: 'المصنعيات', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'labor' || item.item_type === 'service' || (item.item_type === 'part' && !item.part_id && String(item.description ?? '').trim() === 'مصنعيات')), 'total') },
+    { title: 'قطع غيار مشتراة خارج المخزن', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'part' && !item.part_id && String(item.description ?? '').trim() !== 'مصنعيات'), 'total') },
   ]
 
   const cards = [
