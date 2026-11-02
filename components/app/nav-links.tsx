@@ -13,7 +13,8 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
       return !['/branches', '/employees', '/invoices', '/expenses', '/reports', '/audit-logs', '/deleted-records'].includes(path)
     }
     if (role === 'accountant') {
-      return !['/services', '/branches', '/employees', '/attendance', '/audit-logs', '/deleted-records'].includes(path)
+      // Accountants can access employee and attendance records; management-only logs and branches remain hidden.
+      return !['/services', '/branches', '/audit-logs', '/deleted-records'].includes(path)
     }
     return !['/branches', '/employees', '/invoices', '/expenses', '/reports', '/audit-logs', '/deleted-records'].includes(path)
   }
