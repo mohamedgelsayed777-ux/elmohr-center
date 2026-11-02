@@ -80,6 +80,7 @@ export type ResourceKey =
   | 'employees'
   | 'expenses'
   | 'attendance'
+  | 'spare_part_requests'
 
 export type Resource = {
   key: ResourceKey
@@ -319,6 +320,58 @@ export const RESOURCES: Record<ResourceKey, Resource> = {
       { key: 'quantity', label: 'الكمية', format: 'number' },
       { key: 'sale_price', label: 'سعر البيع', format: 'currency' },
       branchColumn,
+    ],
+  },
+  spare_part_requests: {
+    key: 'spare_part_requests',
+    table: 'spare_part_requests',
+    path: '/spare-part-requests',
+    title: 'سجل طلبات قطع الغيار',
+    singular: 'طلب قطعة غيار',
+    description: 'تسجيل القطع المطلوبة للعملاء ومتابعة السعر وحالة توفيرها',
+    select: 'id, request_number, branch_id, customer_name, customer_phone, car_make, car_model, car_year, part_name, estimated_price, status, notes, created_at, branch:branches(name)',
+    orderBy: { column: 'created_at', ascending: false },
+    searchColumns: ['customer_name', 'customer_phone', 'part_name', 'car_make', 'car_model'],
+    searchPlaceholder: 'ابحث باسم العميل أو الهاتف أو قطعة الغيار...',
+    filters: [
+      { name: 'status', label: 'الحالة', options: [
+        { value: 'مطلوب', label: 'مطلوب' },
+        { value: 'جاري البحث', label: 'جاري البحث' },
+        { value: 'تم توفيره', label: 'تم توفيره' },
+        { value: 'تم التسليم', label: 'تم التسليم' },
+        { value: 'ملغي', label: 'ملغي' },
+      ] },
+      branchFilter,
+    ],
+    fields: [
+      { name: 'customer_name', label: 'اسم العميل', type: 'text', required: true },
+      { name: 'customer_phone', label: 'رقم تليفون العميل', type: 'tel', required: true },
+      { name: 'car_make', label: 'ماركة السيارة', type: 'text' },
+      { name: 'car_model', label: 'موديل السيارة', type: 'text' },
+      { name: 'car_year', label: 'سنة الصنع', type: 'number', min: 1950 },
+      { name: 'part_name', label: 'قطعة الغيار المطلوبة', type: 'text', required: true, fullWidth: true },
+      { name: 'estimated_price', label: 'السعر المتوقع (جنيه)', type: 'number', min: 0, step: '0.01', required: true, defaultValue: 0 },
+      { name: 'status', label: 'حالة الطلب', type: 'select', required: true, defaultValue: 'مطلوب', options: [
+        { value: 'مطلوب', label: 'مطلوب' },
+        { value: 'جاري البحث', label: 'جاري البحث' },
+        { value: 'تم توفيره', label: 'تم توفيره' },
+        { value: 'تم التسليم', label: 'تم التسليم' },
+        { value: 'ملغي', label: 'ملغي' },
+      ] },
+      branchField,
+      { name: 'notes', label: 'ملاحظات إضافية', type: 'textarea', fullWidth: true },
+    ],
+    columns: [
+      { key: 'request_number', label: 'رقم الطلب', format: 'code', primary: true, prefix: 'REQ-' },
+      { key: 'customer_name', label: 'اسم العميل', secondary: true },
+      { key: 'customer_phone', label: 'رقم التليفون', format: 'code' },
+      { key: 'part_name', label: 'قطعة الغيار المطلوبة' },
+      { key: 'estimated_price', label: 'السعر المتوقع', format: 'currency' },
+      { key: 'status', label: 'الحالة', format: 'badge' },
+      { key: 'car_make', label: 'ماركة السيارة', hideOnMobile: true },
+      { key: 'car_model', label: 'الموديل', hideOnMobile: true },
+      { key: 'branch.name', label: 'الفرع', hideOnMobile: true },
+      { key: 'created_at', label: 'تاريخ الطلب', format: 'date', hideOnMobile: true },
     ],
   },
   invoices: {
