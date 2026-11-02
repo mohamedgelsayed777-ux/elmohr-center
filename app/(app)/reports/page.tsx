@@ -25,9 +25,6 @@ function buildRange(year: string, month: string, day: string) {
   } else if (selectedMonth >= 1 && selectedMonth <= 12) {
     start = new Date(selectedYear, selectedMonth - 1, 1)
     end = new Date(selectedYear, selectedMonth, 1)
-  } else if (/^\d{4}$/.test(year)) {
-    start = new Date(selectedYear, 0, 1)
-    end = new Date(selectedYear + 1, 0, 1)
   } else {
     start = new Date(selectedYear, 0, 1)
     end = new Date(selectedYear + 1, 0, 1)
@@ -42,9 +39,7 @@ function buildRange(year: string, month: string, day: string) {
       ? `يوم ${String(selectedDay).padStart(2, '0')}/${String(selectedMonth).padStart(2, '0')}/${selectedYear}`
       : selectedMonth
         ? `شهر ${String(selectedMonth).padStart(2, '0')}/${selectedYear}`
-        : /^\d{4}$/.test(year)
-          ? `سنة ${selectedYear}`
-          : 'هذه السنة',
+        : `سنة ${selectedYear}`,
   }
 }
 
@@ -61,10 +56,15 @@ export default async function ReportsPage({
   const supabase = await createClient()
 
   const [ir, er, or] = await Promise.all([
-    supabase.from('invoices').select('total,paid_amount').gte('issued_at', r.start).lt('issued_at', r.end),
+    supabase.from('invoices').select('id,total,paid_amount').gte('issued_at', r.start).lt('issued_at', r.end),
     supabase.from('expenses').select('amount').gte('expense_date', r.startDate).lt('expense_date', r.endDate),
     supabase.from('work_orders').select('status').gte('opened_at', r.start).lt('opened_at', r.end),
   ])
+
+  const invoiceIds = (ir.data ?? []).map((invoice) => invoice.id)
+  const { data: itemRows, error: itemRowsError } = invoiceIds.length
+    ? await supabase.from('invoice_items').select('item_type,part_id,total').in('invoice_id', invoiceIds)
+    : { data: [], error: null }
 
   const invoiceTotal = sum(ir.data, 'total')
   const paidTotal = sum(ir.data, 'paid_amount')
@@ -72,6 +72,14 @@ export default async function ReportsPage({
   const outstanding = Math.max(0, invoiceTotal - paidTotal)
   const completed = (or.data ?? []).filter((o) => o.status === 'completed' || o.status === 'delivered').length
   const open = Math.max(0, (or.data?.length ?? 0) - completed)
+
+  const breakdown = [
+    { title: 'قطع غيار من المخزن', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'part' && item.part_id), 'total') },
+    { title: 'الزيوت', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'oil'), 'total') },
+    { title: 'الفلاتر', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'filter'), 'total') },
+    { title: 'المصنعيات', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'labor'), 'total') },
+    { title: 'قطع غيار مشتراة خارج المخزن', amount: sum((itemRows ?? []).filter((item) => item.item_type === 'part' && !item.part_id), 'total') },
+  ]
 
   const cards = [
     ['إجمالي الفواتير', formatCurrency(invoiceTotal)],
@@ -107,10 +115,35 @@ export default async function ReportsPage({
 
       <Card>
         <CardHeader>
+          <CardTitle>تفصيل الإيرادات حسب البند</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {itemRowsError ? (
+            <p role="alert" className="text-sm text-destructive">تعذر تحميل تفصيل بنود الفواتير لهذه الفترة.</p>
+          ) : (
+            <>
+              {breakdown.map((item) => (
+                <div key={item.title} className="flex items-center justify-between gap-4 border-b pb-3 last:border-0 last:pb-0">
+                  <span className="text-sm">{item.title}</span>
+                  <span className="font-semibold tabular-nums">{formatCurrency(item.amount)}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between gap-4 border-t pt-3 font-bold">
+                <span>إجمالي البنود المفصلة</span>
+                <span className="tabular-nums">{formatCurrency(breakdown.reduce((total, item) => total + item.amount, 0))}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">التفصيل مبني على بنود الفواتير في الفترة المختارة. قطع الغيار المشتراة خارج المخزن هي البنود المسجلة كقطع غيار بدون ربط بصنف مخزني.</p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>ملخص الفترة</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          جميع القيم المالية بالجنيه المصري، والحسابات مقتصرة على الفترة المحددة.
+          جميع القيم المالية بالجنيه المصري، والحسابات مقتصرة على الفترة المحددة. تفصيل البنود يعرض قيمة المبيعات بالفواتير، بينما بطاقة «المحصل» تعرض المبالغ المسجلة كمدفوعة.
         </CardContent>
       </Card>
     </div>
