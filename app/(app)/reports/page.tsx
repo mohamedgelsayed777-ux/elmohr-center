@@ -56,7 +56,7 @@ export default async function ReportsPage({
   const supabase = await createClient()
 
   const [ir, er, or] = await Promise.all([
-    supabase.from('invoices').select('id,total,paid_amount').gte('issued_at', r.start).lt('issued_at', r.end),
+    supabase.from('invoices').select('id,total,paid_amount,discount').gte('issued_at', r.start).lt('issued_at', r.end),
     supabase.from('expenses').select('amount').gte('expense_date', r.startDate).lt('expense_date', r.endDate),
     supabase.from('work_orders').select('status').gte('opened_at', r.start).lt('opened_at', r.end),
   ])
@@ -68,6 +68,7 @@ export default async function ReportsPage({
 
   const invoiceTotal = sum(ir.data, 'total')
   const paidTotal = sum(ir.data, 'paid_amount')
+  const discountTotal = sum(ir.data, 'discount')
   const expenseTotal = sum(er.data, 'amount')
   const outstanding = Math.max(0, invoiceTotal - paidTotal)
   const completed = (or.data ?? []).filter((o) => o.status === 'completed' || o.status === 'delivered').length
@@ -83,6 +84,7 @@ export default async function ReportsPage({
 
   const cards = [
     ['إجمالي الفواتير', formatCurrency(invoiceTotal)],
+    ['إجمالي الخصومات', formatCurrency(discountTotal)],
     ['المحصل', formatCurrency(paidTotal)],
     ['المتبقي', formatCurrency(outstanding)],
     ['إجمالي المصروفات', formatCurrency(expenseTotal)],
