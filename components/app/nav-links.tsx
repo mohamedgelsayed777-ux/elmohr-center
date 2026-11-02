@@ -1,17 +1,23 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { NAV_GROUPS, isActive } from './nav-items'
 
 export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?: string }) {
   const pathname = usePathname()
+  const router = useRouter()
+
   const can = (href: string) => {
     const path = href.split('?')[0]
     if (role === 'manager') return true
-    if (role !== 'manager') return !['/audit-logs', '/deleted-records'].includes(path)
-    if (role === 'reception') return !['/branches', '/employees', '/invoices', '/expenses', '/reports', '/audit-logs', '/deleted-records'].includes(path)
-    return !['/parts', '/services', '/branches', '/employees', '/attendance', '/invoices', '/expenses', '/reports', '/audit-logs', '/deleted-records'].includes(path)
+    if (role === 'reception') {
+      return !['/branches', '/employees', '/invoices', '/expenses', '/reports', '/audit-logs', '/deleted-records'].includes(path)
+    }
+    if (role === 'accountant') {
+      return !['/parts', '/services', '/branches', '/employees', '/attendance', '/audit-logs', '/deleted-records'].includes(path)
+    }
+    return !['/branches', '/employees', '/invoices', '/expenses', '/reports', '/audit-logs', '/deleted-records'].includes(path)
   }
 
   return (
@@ -29,7 +35,14 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={onNavigate}
+                  onClick={(event) => {
+                    if (!onNavigate) return
+                    // Navigate explicitly before closing the mobile sheet to avoid
+                    // the sheet-dismiss click interrupting navigation on mobile.
+                    event.preventDefault()
+                    router.push(item.href)
+                    onNavigate()
+                  }}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
