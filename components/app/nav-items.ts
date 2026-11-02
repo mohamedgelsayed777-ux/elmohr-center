@@ -3,6 +3,7 @@ import {
   Building2,
   Car,
   ClipboardList,
+  ClipboardPlus,
   LayoutDashboard,
   Package,
   Filter,
@@ -30,6 +31,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'التشغيل',
     items: [
       { href: '/work-orders', label: 'أوامر العمل', icon: ClipboardList },
+      { href: '/spare-part-requests', label: 'سجل طلبات قطع الغيار', icon: ClipboardPlus },
       { href: '/customers', label: 'العملاء', icon: Users },
       { href: '/cars', label: 'السيارات', icon: Car },
     ],
