@@ -1,5 +1,4 @@
 'use client'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { NAV_GROUPS, isActive } from './nav-items'
@@ -31,16 +30,9 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
               const active = isActive(pathname, item.href)
               const Icon = item.icon
               return (
-                <Link
+                <a
                   key={item.href}
                   href={item.href}
-                  onClick={(event) => {
-                    if (!onNavigate) return
-                    // On mobile, force a document navigation instead of relying on
-                    // a client transition that may be interrupted as the sheet closes.
-                    event.preventDefault()
-                    window.location.assign(item.href)
-                  }}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
@@ -51,7 +43,7 @@ export function NavLinks({ onNavigate, role }: { onNavigate?: () => void; role?:
                 >
                   <Icon className="size-4.5 shrink-0" />
                   {item.label}
-                </Link>
+                </a>
               )
             })}
           </div>
