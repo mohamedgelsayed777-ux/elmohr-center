@@ -11,7 +11,8 @@ import { CellValue } from './cell-value'
 import { ResourceToolbar, type ToolbarFilter } from './resource-toolbar'
 import { ResourceFormDialog } from './resource-form-dialog'
 import { WorkOrderFormDialog } from '@/components/work-orders/work-order-form-dialog'
-import { DeleteButton } from './delete-button'\nimport { RecordDateDialog } from './record-date-dialog'
+import { DeleteButton } from './delete-button'
+import { RecordDateDialog } from './record-date-dialog'
 
 const PAGE_SIZE = 20
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -198,7 +199,9 @@ export async function ResourcePage({
                     )}
                   </div>
                   <div className="flex shrink-0 items-center">
-                    {roleData === 'manager' && resourceKey === 'work_orders' && <RecordDateDialog resourceKey="work_orders" recordId={String(row.id)} currentDate={String(row.opened_at ?? '')} label="تاريخ أمر العمل" />}\n                        {roleData === 'manager' && resourceKey === 'invoices' && <RecordDateDialog resourceKey="invoices" recordId={String(row.id)} currentDate={String(row.issued_at ?? '')} label="تاريخ الفاتورة" />}\n                        {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
+                    {roleData === 'manager' && resourceKey === 'work_orders' && <RecordDateDialog resourceKey="work_orders" recordId={String(row.id)} currentDate={String(row.opened_at ?? '')} label="تاريخ أمر العمل" />}
+                        {roleData === 'manager' && resourceKey === 'invoices' && <RecordDateDialog resourceKey="invoices" recordId={String(row.id)} currentDate={String(row.issued_at ?? '')} label="تاريخ الفاتورة" />}
+                        {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
                     {canEdit && (
                       resourceKey === 'work_orders' && workOrderFormProps ? (
                         <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
@@ -270,7 +273,9 @@ export async function ResourcePage({
                     ))}
                     <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-1">
-                        {roleData === 'manager' && resourceKey === 'work_orders' && <RecordDateDialog resourceKey="work_orders" recordId={String(row.id)} currentDate={String(row.opened_at ?? '')} label="تاريخ أمر العمل" />}\n                        {roleData === 'manager' && resourceKey === 'invoices' && <RecordDateDialog resourceKey="invoices" recordId={String(row.id)} currentDate={String(row.issued_at ?? '')} label="تاريخ الفاتورة" />}\n                        {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
+                        {roleData === 'manager' && resourceKey === 'work_orders' && <RecordDateDialog resourceKey="work_orders" recordId={String(row.id)} currentDate={String(row.opened_at ?? '')} label="تاريخ أمر العمل" />}
+                        {roleData === 'manager' && resourceKey === 'invoices' && <RecordDateDialog resourceKey="invoices" recordId={String(row.id)} currentDate={String(row.issued_at ?? '')} label="تاريخ الفاتورة" />}
+                        {resourceKey === 'invoices' && <Link href={`/invoices/${String(row.id)}/print`} target="_blank" aria-label="طباعة الفاتورة" className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}><Printer className="size-4" /></Link>}
                         {canEdit && (
                           resourceKey === 'work_orders' && workOrderFormProps ? (
                             <WorkOrderFormDialog {...workOrderFormProps} record={row as unknown as {id:string;[key:string]:unknown}} />
