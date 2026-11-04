@@ -422,8 +422,19 @@ export async function updateRecordDate(
     .update({ [dateColumn]: new Date(candidate).toISOString() })
     .eq('id', recordId)
   if (updateError) {
+    console.error('[updateRecordDate] database update failed', {
+      resourceKey,
+      recordId,
+      code: updateError.code,
+      message: updateError.message,
+      details: updateError.details,
+      hint: updateError.hint,
+    })
     if (updateError.code === '42501' || updateError.message.includes('MANAGER_DATE_EDIT_ONLY')) {
       return { ok: false, error: 'تعديل التاريخ متاح للمدير فقط' }
+    }
+    if (updateError.code === '22007' || updateError.code === '22008' || updateError.code === '22023') {
+      return { ok: false, error: 'صيغة التاريخ غير مقبولة، اختر التاريخ مرة أخرى' }
     }
     return { ok: false, error: friendlyDbError(updateError.code) }
   }
