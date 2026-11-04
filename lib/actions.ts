@@ -369,6 +369,71 @@ export async function saveWorkOrderEdit(
   return { ok:true, at:Date.now(), recordId:workOrderId }
 }
 
+
+export async function updateRecordDate(
+  resourceKey: string,
+  recordId: string,
+  newDate: string,
+): Promise<ActionState> {
+  if (!UUID_RE.test(recordId)) return { ok: false, error: 'معرف السجل غير صحيح' }
+  if (!DATE_RE.test(newDate)) return { ok: false, error: 'التاريخ غير صحيح' }
+  const [year, month, day] = newDate.split('-').map(Number)
+  const calendarDate = new Date(Date.UTC(year, month - 1, day))
+  if (calendarDate.getUTCFullYear() !== year || calendarDate.getUTCMonth() !== month - 1 || calendarDate.getUTCDate() !== day) {
+    return { ok: false, error: 'التاريخ غير صحيح' }
+  }
+
+  const table = resourceKey === 'work_orders' ? 'work_orders' : resourceKey === 'invoices' ? 'invoices' : null
+  const dateColumn = resourceKey === 'work_orders' ? 'opened_at' : resourceKey === 'invoices' ? 'issued_at' : null
+  const path = resourceKey === 'work_orders' ? '/work-orders' : resourceKey === 'invoices' ? '/invoices' : null
+  if (!table || !dateColumn || !path) return { ok: false, error: 'نوع السجل غير مدعوم' }
+
+  const supabase = await requireUser()
+  const { data: role, error: roleError } = await supabase.rpc('current_user_role')
+  if (roleError || role !== 'manager') return { ok: false, error: 'تعديل التاريخ متاح للمدير فقط' }
+
+  const { data: existing, error: readError } = await supabase
+    .from(table)
+    .select(`id,${dateColumn}`)
+    .eq('id', recordId)
+    .maybeSingle()
+  if (readError || !existing) return { ok: false, error: 'السجل غير موجود أو لا يمكنك الوصول إليه' }
+
+  const oldTimestamp = String(existing[dateColumn] ?? '')
+  if (!oldTimestamp) return { ok: false, error: 'تاريخ السجل غير متاح' }
+  const clockParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(oldTimestamp))
+  const clock = (type: string) => clockParts.find((part) => part.type === type)?.value ?? '00'
+  const desiredWallClock = Date.parse(`${newDate}T${clock('hour')}:${clock('minute')}:${clock('second')}Z`)
+  let candidate = desiredWallClock
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(candidate))
+    const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0)
+    const actualWallClock = Date.UTC(value('year'), value('month') - 1, value('day'), value('hour'), value('minute'), value('second'))
+    candidate += desiredWallClock - actualWallClock
+  }
+
+  const { error: updateError } = await supabase
+    .from(table)
+    .update({ [dateColumn]: new Date(candidate).toISOString() })
+    .eq('id', recordId)
+  if (updateError) {
+    if (updateError.code === '42501' || updateError.message.includes('MANAGER_DATE_EDIT_ONLY')) {
+      return { ok: false, error: 'تعديل التاريخ متاح للمدير فقط' }
+    }
+    return { ok: false, error: friendlyDbError(updateError.code) }
+  }
+
+  revalidatePath(path)
+  revalidatePath('/reports')
+  revalidatePath('/')
+  return { ok: true, at: Date.now(), recordId }
+}
+
 export async function deleteRecord(resourceKey: string, id: string): Promise<ActionState> {
   const resource = getResource(resourceKey)
   if (!resource || !UUID_RE.test(id)) return { ok: false, error: 'طلب غير صالح' }
