@@ -25,18 +25,25 @@ export function ResourceToolbar({
   const [isPending, startTransition] = useTransition()
   const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const paramsRef = useRef(searchParams.toString())
+
+  useEffect(() => {
+    paramsRef.current = searchParams.toString()
+    setQuery(searchParams.get('q') ?? '')
+  }, [searchParams])
 
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
   }, [])
 
   function updateParams(updates: Record<string, string>) {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(paramsRef.current)
     Object.entries(updates).forEach(([key, value]) => {
       if (value) params.set(key, value)
       else params.delete(key)
     })
     params.delete('page')
+    paramsRef.current = params.toString()
     startTransition(() => {
       router.replace(`${pathname}${params.size ? `?${params}` : ''}`, { scroll: false })
     })
