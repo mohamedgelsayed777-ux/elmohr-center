@@ -63,7 +63,6 @@ export async function ResourcePage({
   const canDelete = ['invoices', 'spare_part_requests'].includes(resourceKey)
     ? roleData === 'manager'
     : !(roleData === 'reception' && resourceKey === 'work_orders') && !(resourceKey === 'parts' && ['accountant', 'reception'].includes(roleData ?? ''))
-  const relationOptions = await loadRelationOptions(resource)
   const inventoryType = resourceKey === 'parts' ? param(searchParams, 'inventory_type') : ''
   const inventoryTitle = resourceKey === 'parts' && inventoryType === 'part' ? 'مخزن قطع الغيار' : resourceKey === 'parts' && inventoryType === 'filter' ? 'مخزن الفلاتر' : resourceKey === 'parts' && inventoryType === 'oil' ? 'مخزن الزيوت' : resource.title
 
@@ -190,7 +189,10 @@ export async function ResourcePage({
     query = query.eq('inventory_type', inventoryType)
   }
 
-  const { data, count, error } = await query
+  const [{ data, count, error }, relationOptions] = await Promise.all([
+    query,
+    loadRelationOptions(resource),
+  ])
   const rows = (data ?? []) as unknown as Record<string, unknown>[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
