@@ -182,7 +182,8 @@ export async function ResourcePage({
     const value = param(searchParams, filter.name)
     if (!value) continue
     const valid = filter.relation ? UUID_RE.test(value) : options.some((o) => o.value === value)
-    if (valid) query = query.eq(filter.name, value)
+    if (filter.relation && UUID_RE.test(value)) query = query.eq(filter.name, value)
+    else if (!filter.relation && valid) query = query.eq(filter.name, value)
   }
 
   if (resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType)) {
