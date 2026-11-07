@@ -13,6 +13,7 @@ import { ResourceFormDialog } from './resource-form-dialog'
 import { WorkOrderFormDialog } from '@/components/work-orders/work-order-form-dialog'
 import { DeleteButton } from './delete-button'
 import { RecordDateDialog } from './record-date-dialog'
+import { EmployeePasswordDialog } from './employee-password-dialog'
 
 const PAGE_SIZE = 20
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -42,6 +43,9 @@ export async function ResourcePage({
   const resource = RESOURCES[resourceKey]
   const supabase = await createClient()
   const { data: roleData } = await supabase.rpc('current_user_role')
+  const { data: employeeAccounts } = resourceKey === 'employees' && roleData === 'manager'
+    ? await supabase.from('profiles').select('id, full_name, role, employee_code').in('role', ['reception', 'accountant']).order('full_name')
+    : { data: [] as { id: string; full_name: string; role: string; employee_code: string | null }[] }
   const canEdit = !( ['accountant', 'reception'].includes(roleData ?? '') && ['attendance', 'services'].includes(resourceKey)) && !(roleData === 'reception' && resourceKey === 'parts')
   const canDelete = ['invoices', 'spare_part_requests'].includes(resourceKey)
     ? roleData === 'manager'
@@ -157,6 +161,18 @@ export async function ResourcePage({
           )
         }
       />
+
+      {resourceKey === 'employees' && roleData === 'manager' && (employeeAccounts ?? []).length > 0 && (
+        <section className="mb-5 rounded-lg border bg-card p-4">
+          <h2 className="mb-1 font-semibold">إدارة كلمات مرور حسابات الموظفين</h2>
+          <p className="mb-3 text-sm text-muted-foreground">اختر حساب الاستقبال أو المحاسب لتعيين كلمة مرور جديدة. هذه العملية لا تغير الصلاحيات.</p>
+          <div className="flex flex-wrap gap-2">
+            {(employeeAccounts ?? []).map((account) => (
+              <EmployeePasswordDialog key={account.id} account={account} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <ResourceToolbar
         searchPlaceholder={resource.searchPlaceholder}
