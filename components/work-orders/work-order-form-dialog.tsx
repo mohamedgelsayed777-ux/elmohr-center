@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/resource/native-select'
 import { Textarea } from '@/components/ui/textarea'
-import { getWorkOrderEditData, saveWorkOrderEdit, saveWorkOrderIntake, type ActionState } from '@/lib/actions'
+import { getWorkOrderEditData, getWorkOrderFormOptions, saveWorkOrderEdit, saveWorkOrderIntake, type ActionState } from '@/lib/actions'
 
 type Option={value:string;label:string}
 type Customer={value:string;label:string;phone:string;branch_id:string|null}
@@ -22,7 +22,13 @@ type Props={branches:Option[];employees:Option[];customers:Customer[];cars:Car[]
 
 const initialState:ActionState={ok:false}
 
-export function WorkOrderFormDialog({branches,employees,customers,cars,stock,services,record}:Props){
+export function WorkOrderFormDialog({branches: initialBranches,employees: initialEmployees,customers: initialCustomers,cars: initialCars,stock: initialStock,services: initialServices,record}:Props){
+ const [branches,setBranches]=useState(initialBranches)
+ const [employees,setEmployees]=useState(initialEmployees)
+ const [customers,setCustomers]=useState(initialCustomers)
+ const [cars,setCars]=useState(initialCars)
+ const [stock,setStock]=useState(initialStock)
+ const [services,setServices]=useState(initialServices)
  const router=useRouter()
  const [open,setOpen]=useState(false)
  const [loadingRecord,setLoadingRecord]=useState(false)
@@ -59,18 +65,23 @@ export function WorkOrderFormDialog({branches,employees,customers,cars,stock,ser
  useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success(record?'تم حفظ تعديلات أمر العمل والفاتورة':'تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح');router.refresh()}},[state.ok,record,router])
  const openDialog=async()=>{
   setOpen(true)
-  if(!record)return
   setLoadingRecord(true)
   setItems([]);setServiceItems([]);setManualPurchasedItems([])
   try {
+   const options=await getWorkOrderFormOptions()
+   if(!options.ok){toast.error(options.error);setOpen(false);return}
+   setBranches(options.branches);setEmployees(options.employees);setCustomers(options.customers)
+   setCars(options.cars);setStock(options.stock);setServices(options.services)
+   if(!record){setBranchId(options.branches[0]?.value??'');return}
    const result=await getWorkOrderEditData(record.id)
    if(!result.ok){toast.error(result.error);setOpen(false);return}
-   setCustomerId(String(result.order.customer_id??'')); setCustomerSearch(customers.find(c=>c.value===result.order.customer_id)?.label??'')
-   setCarId(String(result.order.car_id??'')); setBranchId(String(result.order.branch_id??branches[0]?.value??''))
+   setCustomerId(String(result.order.customer_id??''))
+   setCustomerSearch(options.customers.find(c=>c.value===result.order.customer_id)?.label??'')
+   setCarId(String(result.order.car_id??'')); setBranchId(String(result.order.branch_id??options.branches[0]?.value??''))
    setLaborAmount(Number(result.order.labor_amount??0)); setAmountPaid(Number(result.order.amount_paid??0))
    setItems(result.items);setServiceItems(result.serviceItems);setManualPurchasedItems(result.manualPurchasedItems)
   } catch {
-   toast.error('تعذر تحميل تفاصيل أمر العمل. أغلق النافذة وحاول مرة أخرى.')
+   toast.error('تعذر تحميل بيانات نموذج أمر العمل. أغلق النافذة وحاول مرة أخرى.')
    setOpen(false)
   } finally {setLoadingRecord(false)}
  }
