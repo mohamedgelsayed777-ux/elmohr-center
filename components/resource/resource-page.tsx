@@ -25,6 +25,19 @@ function param(sp: SearchParams, key: string) {
   return (Array.isArray(v) ? v[0] : v)?.trim() ?? ''
 }
 
+function cairoDateTimeIso(year: number, month: number, day: number) {
+  const noonUtc = new Date(Date.UTC(year, month - 1, day, 12))
+  const zone = new Intl.DateTimeFormat('en', {
+    timeZone: 'Africa/Cairo',
+    timeZoneName: 'shortOffset',
+  }).formatToParts(noonUtc).find((part) => part.type === 'timeZoneName')?.value ?? 'GMT+2'
+  const match = zone.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/)
+  const offsetMinutes = match
+    ? (match[1] === '-' ? -1 : 1) * (Number(match[2]) * 60 + Number(match[3] ?? 0))
+    : 120
+  return new Date(Date.UTC(year, month - 1, day) - offsetMinutes * 60000).toISOString()
+}
+
 function sanitizeSearch(q: string) {
   return q.replace(/[,()*%\\:"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
 }
@@ -109,29 +122,38 @@ export async function ResourcePage({
       query = query.gte('opened_at', toCairoIso(startParts)).lt('opened_at', toCairoIso(endParts))
     }
   } else if (['attendance', 'invoices', 'expenses'].includes(resourceKey) && (year || month || day)) {
-    const now = new Date()
-    const selectedYear = /^\d{4}$/.test(year) ? Number(year) : now.getFullYear()
+    const cairoNow = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date())
+    const [cairoYear, cairoMonth] = cairoNow.split('-').map(Number)
+    const selectedYear = /^\d{4}$/.test(year) ? Number(year) : cairoYear
     const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
     const selectedDay = /^\d{2}$/.test(day) ? Number(day) : 0
     const daysInSelectedMonth = selectedMonth >= 1 && selectedMonth <= 12
-      ? new Date(selectedYear, selectedMonth, 0).getDate()
+      ? new Date(Date.UTC(selectedYear, selectedMonth, 0)).getUTCDate()
       : 0
-    let start: Date
-    let end: Date
+    let startParts: [number, number, number]
+    let endParts: [number, number, number]
     if (selectedMonth >= 1 && selectedMonth <= 12 && selectedDay >= 1 && selectedDay <= daysInSelectedMonth) {
-      start = new Date(selectedYear, selectedMonth - 1, selectedDay)
-      end = new Date(selectedYear, selectedMonth - 1, selectedDay + 1)
+      startParts = [selectedYear, selectedMonth, selectedDay]
+      const next = new Date(Date.UTC(selectedYear, selectedMonth - 1, selectedDay + 1))
+      endParts = [next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()]
     } else if (selectedMonth >= 1 && selectedMonth <= 12) {
-      start = new Date(selectedYear, selectedMonth - 1, 1)
-      end = new Date(selectedYear, selectedMonth, 1)
+      startParts = [selectedYear, selectedMonth, 1]
+      endParts = selectedMonth === 12 ? [selectedYear + 1, 1, 1] : [selectedYear, selectedMonth + 1, 1]
     } else {
-      start = new Date(selectedYear, 0, 1)
-      end = new Date(selectedYear + 1, 0, 1)
+      startParts = [selectedYear, 1, 1]
+      endParts = [selectedYear + 1, 1, 1]
     }
     const dateColumn = resourceKey === 'attendance' ? 'attendance_date' : resourceKey === 'expenses' ? 'expense_date' : 'issued_at'
     const dateOnly = resourceKey === 'attendance' || resourceKey === 'expenses'
-    query = query.gte(dateColumn, dateOnly ? start.toISOString().slice(0, 10) : start.toISOString())
-      .lt(dateColumn, dateOnly ? end.toISOString().slice(0, 10) : end.toISOString())
+    const start = dateOnly
+      ? `${startParts[0]}-${String(startParts[1]).padStart(2, '0')}-${String(startParts[2]).padStart(2, '0')}`
+      : cairoDateTimeIso(...startParts)
+    const end = dateOnly
+      ? `${endParts[0]}-${String(endParts[1]).padStart(2, '0')}-${String(endParts[2]).padStart(2, '0')}`
+      : cairoDateTimeIso(...endParts)
+    query = query.gte(dateColumn, start).lt(dateColumn, end)
   }
 
   if (search && resource.searchColumns.length) {
