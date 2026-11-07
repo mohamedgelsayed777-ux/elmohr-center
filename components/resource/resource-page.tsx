@@ -66,7 +66,49 @@ export async function ResourcePage({
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  if (['attendance', 'invoices', 'work_orders', 'expenses'].includes(resourceKey) && (year || month || day)) {
+  if (resourceKey === 'work_orders') {
+    const selectedMonth = param(searchParams, 'month')
+    const selectedPeriod = param(searchParams, 'period') || 'month'
+    const now = new Date()
+    const cairoDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(now)
+    const [currentYear, currentMonth, currentDay] = cairoDate.split('-').map(Number)
+    let startParts: [number, number, number] | null = null
+    let endParts: [number, number, number] | null = null
+    if (/^\d{4}-\d{2}$/.test(selectedMonth)) {
+      const [y, m] = selectedMonth.split('-').map(Number)
+      if (m >= 1 && m <= 12) {
+        startParts = [y, m, 1]
+        endParts = m === 12 ? [y + 1, 1, 1] : [y, m + 1, 1]
+      }
+    } else if (selectedPeriod === 'day') {
+      startParts = [currentYear, currentMonth, currentDay]
+      endParts = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay + 1))
+        .toISOString().slice(0, 10).split('-').map(Number) as [number, number, number]
+    } else if (selectedPeriod === 'week') {
+      const weekday = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay)).getUTCDay()
+      const daysSinceMonday = (weekday + 6) % 7
+      const monday = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay - daysSinceMonday))
+      const sundayNext = new Date(monday.getTime() + 7 * 86400000)
+      startParts = [monday.getUTCFullYear(), monday.getUTCMonth() + 1, monday.getUTCDate()]
+      endParts = [sundayNext.getUTCFullYear(), sundayNext.getUTCMonth() + 1, sundayNext.getUTCDate()]
+    } else if (selectedPeriod === 'month') {
+      startParts = [currentYear, currentMonth, 1]
+      endParts = currentMonth === 12 ? [currentYear + 1, 1, 1] : [currentYear, currentMonth + 1, 1]
+    }
+    if (startParts && endParts) {
+      const toCairoIso = ([y, m, d]: [number, number, number]) => {
+        const noonUtc = new Date(Date.UTC(y, m - 1, d, 12))
+        const zone = new Intl.DateTimeFormat('en', { timeZone: 'Africa/Cairo', timeZoneName: 'shortOffset' })
+          .formatToParts(noonUtc).find(part => part.type === 'timeZoneName')?.value ?? 'GMT+2'
+        const match = zone.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/)
+        const offsetMinutes = match ? (match[1] === '-' ? -1 : 1) * (Number(match[2]) * 60 + Number(match[3] ?? 0)) : 120
+        return new Date(Date.UTC(y, m - 1, d) - offsetMinutes * 60000).toISOString()
+      }
+      query = query.gte('opened_at', toCairoIso(startParts)).lt('opened_at', toCairoIso(endParts))
+    }
+  } else if (['attendance', 'invoices', 'expenses'].includes(resourceKey) && (year || month || day)) {
     const now = new Date()
     const selectedYear = /^\d{4}$/.test(year) ? Number(year) : now.getFullYear()
     const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
@@ -86,7 +128,7 @@ export async function ResourcePage({
       start = new Date(selectedYear, 0, 1)
       end = new Date(selectedYear + 1, 0, 1)
     }
-    const dateColumn = resourceKey === 'attendance' ? 'attendance_date' : resourceKey === 'expenses' ? 'expense_date' : resourceKey === 'invoices' ? 'issued_at' : 'opened_at'
+    const dateColumn = resourceKey === 'attendance' ? 'attendance_date' : resourceKey === 'expenses' ? 'expense_date' : 'issued_at'
     const dateOnly = resourceKey === 'attendance' || resourceKey === 'expenses'
     query = query.gte(dateColumn, dateOnly ? start.toISOString().slice(0, 10) : start.toISOString())
       .lt(dateColumn, dateOnly ? end.toISOString().slice(0, 10) : end.toISOString())
@@ -177,7 +219,7 @@ export async function ResourcePage({
       <ResourceToolbar
         searchPlaceholder={resource.searchPlaceholder}
         filters={toolbarFilters}
-        dateFilter={['attendance', 'invoices', 'work_orders', 'expenses'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
+        dateFilter={['attendance', 'invoices', 'expenses'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
       />
 
       <p className="mb-3 text-sm text-muted-foreground">
