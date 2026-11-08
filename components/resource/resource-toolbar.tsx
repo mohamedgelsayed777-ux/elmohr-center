@@ -26,15 +26,33 @@ export function ResourceToolbar({
   const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const paramsRef = useRef(searchParams.toString())
+  // Keep the newest requested URL while Next.js is still applying an earlier
+  // navigation. Otherwise an older searchParams render can overwrite newer
+  // filter selections made in quick succession.
+  const pendingParamsRef = useRef<string | null>(null)
 
   useEffect(() => {
-    paramsRef.current = searchParams.toString()
+    const current = searchParams.toString()
+    if (pendingParamsRef.current !== null && current !== pendingParamsRef.current) {
+      return
+    }
+    paramsRef.current = current
+    pendingParamsRef.current = null
     setQuery(searchParams.get('q') ?? '')
   }, [searchParams])
 
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
   }, [])
+
+  function navigateWithParams(params: URLSearchParams) {
+    const next = params.toString()
+    paramsRef.current = next
+    pendingParamsRef.current = next
+    startTransition(() => {
+      router.replace(`${pathname}${next ? `?${next}` : ''}`, { scroll: false })
+    })
+  }
 
   function updateParams(updates: Record<string, string>) {
     const params = new URLSearchParams(paramsRef.current)
@@ -43,10 +61,7 @@ export function ResourceToolbar({
       else params.delete(key)
     })
     params.delete('page')
-    paramsRef.current = params.toString()
-    startTransition(() => {
-      router.replace(`${pathname}${params.size ? `?${params}` : ''}`, { scroll: false })
-    })
+    navigateWithParams(params)
   }
 
   function onSearchChange(value: string) {
@@ -121,7 +136,7 @@ export function ResourceToolbar({
                 value={searchParams.get(filter.name) ?? ''}
                 onChange={(e) => updateParams({ [filter.name]: e.target.value })}
               >
-                <option value="">{`كل ${filter.label}`}</option>
+                <option value="">{ `كل ${filter.label}` }</option>
                 {filter.options.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -139,8 +154,9 @@ export function ResourceToolbar({
             variant="ghost"
             size="sm"
             onClick={() => {
+              if (debounceRef.current) clearTimeout(debounceRef.current)
               setQuery('')
-              startTransition(() => router.replace(pathname, { scroll: false }))
+              navigateWithParams(new URLSearchParams())
             }}
           >
             <X className="size-4" aria-hidden="true" />
