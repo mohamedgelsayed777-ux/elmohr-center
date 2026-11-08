@@ -482,6 +482,45 @@ export async function signOut() {
   redirect('/login')
 }
 
+export async function getWorkOrderFormOptions() {
+  const supabase = await requireUser()
+  const [
+    { data: branches, error: branchesError },
+    { data: employees, error: employeesError },
+    { data: customers, error: customersError },
+    { data: cars, error: carsError },
+    { data: stock, error: stockError },
+    { data: services, error: servicesError },
+  ] = await Promise.all([
+    supabase.from('branches').select('id,name').eq('is_active', true).order('name'),
+    supabase.from('employees').select('id,full_name').eq('status', 'active').order('full_name'),
+    supabase.from('customers').select('id,full_name,phone,branch_id').order('full_name').limit(1000),
+    supabase.from('cars').select('id,customer_id,make,model,year,plate_number,vin,color,mileage').order('created_at', { ascending: false }).limit(2000),
+    supabase.from('parts').select('id,name,sku,part_number,quantity,sale_price,inventory_type,branch_id').gte('quantity', 0).order('name'),
+    supabase.from('services').select('id,name,price,category').eq('is_active', true).order('name'),
+  ])
+  if (branchesError || employeesError || customersError || carsError || stockError || servicesError) {
+    return { ok: false as const, error: 'تعذر تحميل بيانات نموذج أمر العمل. حدّث الصفحة وحاول مرة أخرى.' }
+  }
+  return {
+    ok: true as const,
+    branches: (branches ?? []).map(x => ({ value: x.id, label: x.name })),
+    employees: (employees ?? []).map(x => ({ value: x.id, label: x.full_name })),
+    customers: (customers ?? []).map(x => ({ value: x.id, label: x.full_name, phone: x.phone ?? '', branch_id: x.branch_id })),
+    cars: (cars ?? []).map(x => ({
+      id: x.id, customer_id: x.customer_id, make: x.make ?? '', model: x.model ?? '',
+      year: x.year ?? null, plate_number: x.plate_number ?? '', vin: x.vin ?? '',
+      color: x.color ?? '', mileage: x.mileage ?? null,
+    })),
+    stock: (stock ?? []).map(x => ({
+      ...x, branch_id: x.branch_id ?? null, quantity: Number(x.quantity ?? 0),
+      sale_price: Number(x.sale_price ?? 0),
+      inventory_type: (x.inventory_type === 'oil' ? 'oil' : x.inventory_type === 'filter' ? 'filter' : 'part') as 'part'|'filter'|'oil',
+    })),
+    services: (services ?? []).map(x => ({ id: x.id, name: x.name, price: Number(x.price ?? 0), category: x.category ?? null })),
+  }
+}
+
 export async function saveWorkOrderIntake(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const supabase = await requireUser()
 
