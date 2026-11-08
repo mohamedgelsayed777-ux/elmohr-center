@@ -180,9 +180,14 @@ export async function ResourcePage({
     toolbarFilters.push({ name: filter.name, label: filter.label, options })
     const value = param(searchParams, filter.name)
     if (!value) continue
-    const valid = filter.relation ? UUID_RE.test(value) : options.some((o) => o.value === value)
-    if (filter.relation && UUID_RE.test(value)) query = query.eq(filter.name, value)
-    else if (!filter.relation && valid) query = query.eq(filter.name, value)
+    // Apply the selected filter value directly to the database query.
+    // Dropdown options are presentation data and must never decide whether a
+    // supplied filter is applied (they may be incomplete or loaded separately).
+    if (filter.relation) {
+      if (UUID_RE.test(value)) query = query.eq(filter.name, value)
+    } else {
+      query = query.eq(filter.name, value)
+    }
   }
 
   if (resourceKey === 'parts' && ['part', 'filter', 'oil'].includes(inventoryType)) {
