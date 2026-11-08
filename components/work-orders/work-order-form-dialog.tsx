@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, Pencil } from 'lucide-react'
@@ -34,6 +34,7 @@ export function WorkOrderFormDialog({branches: initialBranches,employees: initia
  const [loadingRecord,setLoadingRecord]=useState(false)
  const action=record ? saveWorkOrderEdit.bind(null,record.id) : saveWorkOrderIntake
  const [state,formAction,pending]=useActionState(action,initialState)
+ const handledSuccessState=useRef<ActionState|null>(null)
  const [customerId,setCustomerId]=useState('')
  const [customerSearch,setCustomerSearch]=useState('')
  const filteredCustomers=useMemo(()=>{const q=customerSearch.trim().toLowerCase();if(!q)return customers;return customers.filter(c=>`${c.label} ${c.phone}`.toLowerCase().includes(q))},[customers,customerSearch])
@@ -62,7 +63,7 @@ export function WorkOrderFormDialog({branches: initialBranches,employees: initia
  const addService=(id:string)=>{if(!id)return;setServiceItems(x=>x.some(i=>i.service_id===id)?x:x.concat({service_id:id,quantity:1}))}
  const updateServiceQty=(id:string,q:number)=>setServiceItems(x=>q<=0?x.filter(i=>i.service_id!==id):x.map(i=>i.service_id===id?{...i,quantity:q}:i))
  const removeService=(id:string)=>setServiceItems(x=>x.filter(i=>i.service_id!==id))
- useEffect(()=>{if(state.ok){setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success(record?'تم حفظ تعديلات أمر العمل والفاتورة':'تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح');router.refresh()}},[state.ok,record,router])
+ useEffect(()=>{if(state.ok && handledSuccessState.current!==state){handledSuccessState.current=state;setOpen(false);setItems([]);setServiceItems([]);setManualPurchasedItems([]);setCustomerId('');setCarId('');setLaborAmount(0);setAmountPaid(0);toast.success(record?'تم حفظ تعديلات أمر العمل والفاتورة':'تم إنشاء أمر العمل وربطه بالعميل والسيارة بنجاح');router.refresh()}},[state,record,router])
  const openDialog=async()=>{
   setOpen(true)
   setLoadingRecord(true)
