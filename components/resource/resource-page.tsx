@@ -78,8 +78,32 @@ export async function ResourcePage({
     .order(resource.orderBy.column, { ascending: resource.orderBy.ascending })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1)
 
-  if (resourceKey === 'work_orders') {
-    const selectedMonth = param(searchParams, 'month')
+  if (resourceKey === 'work_orders' && (year || month || day)) {
+    const cairoNow = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date())
+    const [cairoYear, cairoMonth] = cairoNow.split('-').map(Number)
+    const selectedYear = /^\d{4}$/.test(year) ? Number(year) : cairoYear
+    const selectedMonth = /^\d{2}$/.test(month) ? Number(month) : 0
+    const selectedDay = /^\d{2}$/.test(day) ? Number(day) : 0
+    const daysInSelectedMonth = selectedMonth >= 1 && selectedMonth <= 12
+      ? new Date(Date.UTC(selectedYear, selectedMonth, 0)).getUTCDate()
+      : 0
+    let startParts: [number, number, number]
+    let endParts: [number, number, number]
+    if (selectedMonth >= 1 && selectedMonth <= 12 && selectedDay >= 1 && selectedDay <= daysInSelectedMonth) {
+      startParts = [selectedYear, selectedMonth, selectedDay]
+      const next = new Date(Date.UTC(selectedYear, selectedMonth - 1, selectedDay + 1))
+      endParts = [next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()]
+    } else if (selectedMonth >= 1 && selectedMonth <= 12) {
+      startParts = [selectedYear, selectedMonth, 1]
+      endParts = selectedMonth === 12 ? [selectedYear + 1, 1, 1] : [selectedYear, selectedMonth + 1, 1]
+    } else {
+      startParts = [selectedYear, 1, 1]
+      endParts = [selectedYear + 1, 1, 1]
+    }
+    query = query.gte('opened_at', cairoDateTimeIso(...startParts)).lt('opened_at', cairoDateTimeIso(...endParts))
+  } else if (resourceKey === 'work_orders') {
     const selectedPeriod = param(searchParams, 'period') || 'month'
     const now = new Date()
     const cairoDate = new Intl.DateTimeFormat('en-CA', {
@@ -88,38 +112,21 @@ export async function ResourcePage({
     const [currentYear, currentMonth, currentDay] = cairoDate.split('-').map(Number)
     let startParts: [number, number, number] | null = null
     let endParts: [number, number, number] | null = null
-    if (/^\d{4}-\d{2}$/.test(selectedMonth)) {
-      const [y, m] = selectedMonth.split('-').map(Number)
-      if (m >= 1 && m <= 12) {
-        startParts = [y, m, 1]
-        endParts = m === 12 ? [y + 1, 1, 1] : [y, m + 1, 1]
-      }
-    } else if (selectedPeriod === 'day') {
+    if (selectedPeriod === 'day') {
       startParts = [currentYear, currentMonth, currentDay]
-      endParts = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay + 1))
-        .toISOString().slice(0, 10).split('-').map(Number) as [number, number, number]
+      const next = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay + 1))
+      endParts = [next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()]
     } else if (selectedPeriod === 'week') {
       const weekday = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay)).getUTCDay()
-      const daysSinceMonday = (weekday + 6) % 7
-      const monday = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay - daysSinceMonday))
+      const monday = new Date(Date.UTC(currentYear, currentMonth - 1, currentDay - ((weekday + 6) % 7)))
       const sundayNext = new Date(monday.getTime() + 7 * 86400000)
       startParts = [monday.getUTCFullYear(), monday.getUTCMonth() + 1, monday.getUTCDate()]
       endParts = [sundayNext.getUTCFullYear(), sundayNext.getUTCMonth() + 1, sundayNext.getUTCDate()]
-    } else if (selectedPeriod === 'month') {
+    } else {
       startParts = [currentYear, currentMonth, 1]
       endParts = currentMonth === 12 ? [currentYear + 1, 1, 1] : [currentYear, currentMonth + 1, 1]
     }
-    if (startParts && endParts) {
-      const toCairoIso = ([y, m, d]: [number, number, number]) => {
-        const noonUtc = new Date(Date.UTC(y, m - 1, d, 12))
-        const zone = new Intl.DateTimeFormat('en', { timeZone: 'Africa/Cairo', timeZoneName: 'shortOffset' })
-          .formatToParts(noonUtc).find(part => part.type === 'timeZoneName')?.value ?? 'GMT+2'
-        const match = zone.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/)
-        const offsetMinutes = match ? (match[1] === '-' ? -1 : 1) * (Number(match[2]) * 60 + Number(match[3] ?? 0)) : 120
-        return new Date(Date.UTC(y, m - 1, d) - offsetMinutes * 60000).toISOString()
-      }
-      query = query.gte('opened_at', toCairoIso(startParts)).lt('opened_at', toCairoIso(endParts))
-    }
+    query = query.gte('opened_at', cairoDateTimeIso(...startParts)).lt('opened_at', cairoDateTimeIso(...endParts))
   } else if (['attendance', 'invoices', 'expenses'].includes(resourceKey) && (year || month || day)) {
     const cairoNow = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -253,7 +260,7 @@ export async function ResourcePage({
       <ResourceToolbar
         searchPlaceholder={resource.searchPlaceholder}
         filters={toolbarFilters}
-        dateFilter={['attendance', 'invoices', 'expenses'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
+        dateFilter={['attendance', 'invoices', 'expenses', 'work_orders'].includes(resourceKey) ? { enabled: true, year, month, day } : undefined}
       />
 
       <p className="mb-3 text-sm text-muted-foreground">
