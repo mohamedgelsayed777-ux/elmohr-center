@@ -175,7 +175,7 @@ export async function ResourcePage({
       resourceKey === 'parts' && filter.name === 'category' && inventoryType in categoryOptionsByInventoryType
         ? categoryOptionsByInventoryType[inventoryType as keyof typeof categoryOptionsByInventoryType].map((value) => ({ value, label: value }))
         : filter.relation
-          ? relationOptions[filter.relation] ?? []
+          ? []
           : filter.options ?? []
     toolbarFilters.push({ name: filter.name, label: filter.label, options })
     const value = param(searchParams, filter.name)
@@ -193,6 +193,10 @@ export async function ResourcePage({
     query,
     loadRelationOptions(resource),
   ])
+  for (const filter of toolbarFilters) {
+    const definition = resource.filters.find((item) => item.name === filter.name)
+    if (definition?.relation) filter.options = relationOptions[definition.relation] ?? []
+  }
   const rows = (data ?? []) as unknown as Record<string, unknown>[]
   const total = count ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
