@@ -148,12 +148,15 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                             ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
                             : undefined
                     }
+                    searchable={resourceKey === 'invoices' && ['customer_id', 'work_order_id'].includes(field.name)}
                     onSpecialChange={
                       resourceKey === 'parts' && field.name === 'inventory_type'
                         ? setSelectedInventoryType
                         : resourceKey === 'invoices' && field.name === 'work_order_id'
                           ? handleInvoiceWorkOrder
-                          : undefined
+                          : resourceKey === 'invoices' && field.name === 'customer_id'
+                            ? (value) => setInvoiceValues((current) => ({ ...current, customer_id: value, work_order_id: '' }))
+                            : undefined
                     }
                   />
                 ))}
@@ -199,6 +202,7 @@ function FieldInput({
   onSpecialChange,
   onValueChange,
   readOnly = false,
+  searchable = false,
 }: {
   field: Field
   value: unknown
@@ -207,6 +211,7 @@ function FieldInput({
   onSpecialChange?: (value: string) => void
   onValueChange?: (value: string) => void
   readOnly?: boolean
+  searchable?: boolean
 }) {
   const inputId = `field-${field.name}`
   const wrapper = cn('flex flex-col gap-1.5', field.fullWidth && 'sm:col-span-2')
@@ -246,6 +251,20 @@ function FieldInput({
   }
 
   if (field.type === 'select' || field.type === 'relation') {
+    if (searchable) {
+      return (
+        <SearchableRelationField
+          inputId={inputId}
+          name={field.name}
+          label={label}
+          value={String(value ?? '')}
+          options={specialOptions ?? options}
+          required={Boolean(field.required)}
+          onChange={onSpecialChange}
+          hint={hint}
+        />
+      )
+    }
     return (
       <div className={wrapper}>
         {label}
@@ -336,6 +355,77 @@ function FieldInput({
         onChange={onValueChange ? (e) => onValueChange(e.target.value) : undefined}
         className={cn('h-10', isLtr && 'text-end')}
       />
+      {hint}
+    </div>
+  )
+}
+
+
+function SearchableRelationField({
+  inputId,
+  name,
+  label,
+  value,
+  options,
+  required,
+  onChange,
+  hint,
+}: {
+  inputId: string
+  name: string
+  label: React.ReactNode
+  value: string
+  options: Option[]
+  required: boolean
+  onChange?: (value: string) => void
+  hint: React.ReactNode
+}) {
+  const [query, setQuery] = useState('')
+  const [expanded, setExpanded] = useState(false)
+  const selected = options.find((option) => option.value === value)
+  const filtered = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase('ar')
+    if (!term) return options
+    return options.filter((option) => option.label.toLocaleLowerCase('ar').includes(term))
+  }, [options, query])
+
+  useEffect(() => {
+    if (!expanded) setQuery('')
+  }, [expanded, value])
+
+  return (
+    <div className="relative flex flex-col gap-1.5">
+      {label}
+      <input type="hidden" name={name} value={value} />
+      <Input
+        id={inputId}
+        value={expanded ? query : (selected?.label ?? '')}
+        onFocus={() => { setQuery(''); setExpanded(true) }}
+        onChange={(event) => { setQuery(event.target.value); setExpanded(true); if (value) onChange?.('') }}
+        onBlur={() => window.setTimeout(() => setExpanded(false), 150)}
+        placeholder={required ? 'ابحث بالاسم أو الرقم...' : 'ابحث للاختيار أو اتركه فارغاً'}
+        autoComplete="off"
+        className="h-10"
+        aria-expanded={expanded}
+        aria-controls={`${inputId}-listbox`}
+      />
+      {expanded && (
+        <div id={`${inputId}-listbox`} role="listbox" className="absolute inset-x-0 top-full z-[110] mt-1 max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-lg">
+          {filtered.length ? filtered.slice(0, 100).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className="w-full rounded-sm px-3 py-2 text-start text-sm hover:bg-accent"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => { onChange?.(option.value); setQuery(''); setExpanded(false) }}
+            >
+              {option.label}
+            </button>
+          )) : <p className="px-3 py-2 text-sm text-muted-foreground">لا توجد نتائج مطابقة</p>}
+        </div>
+      )}
       {hint}
     </div>
   )
