@@ -36,6 +36,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
   const [open, setOpen] = useState(false)
   const [selectedMake, setSelectedMake] = useState(String(record?.make ?? ''))
   const [selectedModel, setSelectedModel] = useState(String(record?.model ?? ''))
+  const [selectedOwnerId, setSelectedOwnerId] = useState(String(record?.customer_id ?? ''))
   const [selectedInventoryType, setSelectedInventoryType] = useState(String(inventoryType ?? record?.inventory_type ?? 'part'))
   const [invoiceValues, setInvoiceValues] = useState({
     work_order_id: String(record?.work_order_id ?? ''),
@@ -57,6 +58,7 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
     if (open) {
       setSelectedMake(String(record?.make ?? ''))
       setSelectedModel(String(record?.model ?? ''))
+      setSelectedOwnerId(String(record?.customer_id ?? ''))
     }
   }, [open, record])
 
@@ -121,7 +123,9 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                         ? selectedMake
                         : resourceKey === 'cars' && field.name === 'model'
                           ? selectedModel
-                          : invoiceFieldValue(field)
+                          : resourceKey === 'cars' && field.name === 'customer_id'
+                            ? selectedOwnerId
+                            : invoiceFieldValue(field)
                     }
                     options={field.relation ? relationOptions[field.relation] ?? [] : field.options ?? []}
                     specialOptions={
@@ -148,11 +152,13 @@ export function ResourceFormDialog({ resourceKey, singular, fields, relationOpti
                             ? (value) => handleInvoiceValue(field.name as 'discount' | 'tax' | 'paid_amount', value)
                             : undefined
                     }
-                    searchable={resourceKey === 'invoices' && ['customer_id', 'work_order_id'].includes(field.name)}
+                    searchable={(resourceKey === 'invoices' && ['customer_id', 'work_order_id'].includes(field.name)) || (resourceKey === 'cars' && field.name === 'customer_id')}
                     onSpecialChange={
                       resourceKey === 'parts' && field.name === 'inventory_type'
                         ? setSelectedInventoryType
-                        : resourceKey === 'invoices' && field.name === 'work_order_id'
+                        : resourceKey === 'cars' && field.name === 'customer_id'
+                          ? setSelectedOwnerId
+                          : resourceKey === 'invoices' && field.name === 'work_order_id'
                           ? handleInvoiceWorkOrder
                           : resourceKey === 'invoices' && field.name === 'customer_id'
                             ? (value) => setInvoiceValues((current) => ({ ...current, customer_id: value, work_order_id: '' }))
